@@ -1,0 +1,8 @@
+<launch>
+    <arg name="limited_joint" default="true" />
+    <param if="$(arg limited_joint)" name="robot_description" command="$(find xacro)/xacro --inorder &quot;$(find ur_description)/urdf/ur5_joint_limited_robot.urdf.xacro&quot;" />
+    <param unless="$(arg limited_joint)" name="robot_description" command="$(find xacro)/xacro --inorder &quot;$(find ur_description)/urdf/ur5_robot.urdf.xacro&quot;" />
+    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" 
+          args="-urdf -model simple_model -param robot_description"/>
+
+</launch>   

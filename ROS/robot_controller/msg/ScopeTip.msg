@@ -1,0 +1,3 @@
+geometry_msgs/Pose scope_tip_target
+geometry_msgs/Pose rcm
+string scope_length

@@ -1,0 +1,2 @@
+string angle
+string time

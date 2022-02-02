@@ -1,0 +1,14 @@
+<launch>
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find ur3_gazebo)/world/empty.world"/>
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="recording" value="false"/>
+        <arg name="debug" value="false"/>
+    </include>
+
+    <include file="$(find ur_description)/launch/ur3_spawn.launch">
+        <arg name="limited_joint" value="true"/>
+    </include>
+</launch>

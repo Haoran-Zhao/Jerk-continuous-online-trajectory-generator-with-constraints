@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: htr_ur5_description
+    relative_path: urdf/ur5_with_htr.urdf
+    xacro_args: ""
+  SRDF:
+    relative_path: config/endo.srdf
+  CONFIG:
+    author_name: Haoran Zhao
+    author_email: hzhao9@uh.edu
+    generated_timestamp: 1622745718

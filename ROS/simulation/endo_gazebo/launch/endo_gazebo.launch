@@ -1,0 +1,13 @@
+<launch>
+   <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="verbose" value="true" />
+        <arg name="world_name" value="$(find endo_gazebo)/world/empty.world"/>
+    </include>
+   <param name="robot_description" command="$(find xacro)/xacro --inorder &quot;$(find endo_description)/urdf/ur5_with_endo.urdf&quot;" />
+   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model simple_model -param robot_description"/>
+
+   <node respawn="true" pkg="spacenav_node"
+   type="spacenav_node" name="turtle_spacenav" >
+      <remap from="spacenav/joy" to="joy" />
+</node>
+</launch>

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+echo "Starting Simulation"
+source devel/setup.sh
+roslaunch htr5_gazebo htr5_gazebo_controller.launch > /tmp/gazebo_launch.log 2>&1 &
+sleep 2
+roslaunch htr5_moveit_config custom.launch >/tmp/move_it.log 2>&1 &
+sleep 2
+rosrun robot_controller robot_controller > /tmp/robot.log
+#Now kill simulation on exit
+script_full_path=$(dirname "$0")
+source ${script_full_path}/kill_simulation.sh
