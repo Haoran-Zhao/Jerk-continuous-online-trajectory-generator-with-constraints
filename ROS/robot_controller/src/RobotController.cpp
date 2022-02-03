@@ -200,13 +200,13 @@ void RobotController::_path_computation_thread_func(){
     path_thread.lock();
     Eigen::Matrix4d target_matrix = _target_matrix;
     path_thread.unlock();
-
+    current_robot_pose = _move_group_ptr->getCurrentPose().pose;
+    _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
     //Get the current end effector matrix
-    current_end_effector_matrix = Utilities::pose_to_matrix(_move_group_ptr->getCurrentPose().pose);
-
+    current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
+    Xe = current_end_effector_matrix.block<3,1>(0,3);
     //Set Xt as the target position
     Xt = target_matrix.block<3, 1>(0, 3);
-
     //Get the damp position
     // Eigen::Vector3d damp_position = Utilities::SmoothDampVector(Xa, Xt, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
     Eigen::Vector3d damp_position = Utilities::RuckigCalculation(Xe, Xt, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
@@ -220,8 +220,9 @@ void RobotController::_path_computation_thread_func(){
     geometry_msgs::Pose target_pose = Utilities::matrix_to_pose(target_matrix);
     tf2::Quaternion target_quat(target_pose.orientation.x, target_pose.orientation.y, target_pose.orientation.z, target_pose.orientation.w);
     double target_x, target_y, target_z;
+    correct_joint_range(current_x,current_y,current_z, target_x,target_y,target_z);
     tf2::Matrix3x3(target_quat).getRPY(target_x, target_y, target_z);
-
+    printf("current: %f %f %f, target: %f %f %f\n", current_x, current_y, current_z, target_x, target_y,target_z);
     //Calculate Angular velocities and positions
     Eigen::Vector3d current_euler(current_x, current_y, current_z);
     Eigen::Vector3d target_euler(target_x, target_y, target_z);
@@ -242,6 +243,11 @@ void RobotController::_path_computation_thread_func(){
     cmd_rate.sleep();
   }
 }
+
+void correct_joint_range(double current_x, double current_y, double current_z, double& target_x, double& target_y, double& target_z){
+  
+}
+
 
 void compute_derivative(){
 

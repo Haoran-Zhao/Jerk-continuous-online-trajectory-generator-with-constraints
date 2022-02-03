@@ -7,7 +7,7 @@
 #include "PathComputation.h"
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/JointState.h>
-
+#include <cmath>
 class RobotController {
 public:
     /**

@@ -5,4 +5,4 @@
     <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
           args="-urdf -model simple_model -param robot_description"/>
 
-</launch>   
+</launch>
