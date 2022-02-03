@@ -20,20 +20,12 @@ public:
     ~PathComputation();
 
     /**
-    * Initializes AngulatedPathComputation object. Creates and sets various member variables
+    * Initializes UR3PathComputation object. Creates and sets various member variables
     * @param nodePtr Pointer to ros NodeHandle object
     * @param gazeboState Pointer to GazeboModelState object
     * @param markerEnabled Set to true to enable markers, false otherwise
     */
-    void virtual initialize(ros::NodeHandle *nodePtr, GazeboModelState *model_state, Eigen::Matrix4d incision_matrix, Eigen::Matrix4d current_end_effector_matrix) = 0;
-
-    /**
-    * Computes the end effector way points
-    * @param angulated_angle stores the angulated angle
-    * @param target_matrix stores the destination matrix of the end effector
-    * @returns list of pose for the end effector to move through
-    */
-    std::vector<geometry_msgs::Pose> virtual compute_end_effector_waypoints(double &angulated_angle, double &rotation_angle, Eigen::Matrix4d target_matrix) = 0;
+    void virtual initialize(ros::NodeHandle *nodePtr, GazeboModelState *model_state, Eigen::Matrix4d current_end_effector_matrix) = 0;
 
     /**
     * Rotates a point along the given line

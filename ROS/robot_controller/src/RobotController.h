@@ -8,7 +8,6 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/JointState.h>
 
-
 class RobotController {
 public:
     /**
@@ -40,11 +39,6 @@ public:
     virtual bool initialize(int argc, char **argv);
 
     /**
-    * Calls AngulatedPathComputation::compute_end_effector_waypoints() to compute the waypoints for the robot
-    */
-    virtual void compute_path_func() = 0;
-
-    /**
     * Resets the cylinder position and orientation to match scope tip
     */
     virtual void reset_cylinder() = 0;
@@ -57,8 +51,6 @@ public:
         return &_model_state;
     }
 
-    double get_angle_betweem_two_vectors(Eigen::Vector3d a, Eigen::Vector3d b, Eigen::Vector3d n);
-
     void writeJointStatesToFile();
 
 protected:
@@ -68,9 +60,6 @@ protected:
     ros::Subscriber  _joint_state_sub;
     void jointCallback(const sensor_msgs::JointState& state);
     std::stringstream joint_stream;
-
-
-    Eigen::Matrix4d incision_matrix;
 
     std::mutex path_thread;
 
@@ -115,11 +104,6 @@ protected:
     string _base_frame;
 
     /**
-    * Set to true to enable path replacement, false otherwise
-    */
-    bool _path_replacement_enable;
-
-    /**
     * Pointer to AsyncSpinner to run the main thread in background
     */
     ros::AsyncSpinner *_async_spinner;
@@ -140,16 +124,6 @@ protected:
     geometry_msgs::Pose _delta_pose;
 
     /**
-    * Ros Publisher object to send the software rotation for image viewer to angle topic
-    */
-    ros::Publisher _angle_publisher;
-
-    /**
-    * Ros Publisher object to send the angulation angle for robot joint
-    */
-    ros::Publisher _angulation_publisher;
-
-    /**
     * Stores the target matrix
     */
     Eigen::Matrix4d _target_matrix;
@@ -165,21 +139,6 @@ protected:
     * Points to semaphore object which notifies if cylinder position is updated
     */
     Semaphore *_new_position_available_sem;
-
-    /**
-     * Cylinder angle (Will be set by the derived class)
-     */
-    double _cylinder_angle;
-
-    /**
-    * Scope length (Will be set by the derived class)
-    */
-    double _scope_length;
-
-    /**
-    * Contains the rotation angle that needs to be applied to the viewer
-    */
-    double _rotation_angle;
 
     /**
     * Ros Publisher object to send the trajectory information to the trajectory topic

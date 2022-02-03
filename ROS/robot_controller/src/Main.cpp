@@ -1,4 +1,4 @@
-#include "EndoCameleonRobotController.h"
+#include "UR3RobotController.h"
 #include <tf/tf.h>
 #include <tf/LinearMath/Quaternion.h>
 
@@ -148,11 +148,6 @@ void manualRun(RobotController *robotController)
         delta_pose.orientation.x = delta_pose.orientation.y = delta_pose.orientation.z = delta_pose.orientation.w = 0.0;
 
         int t = getChar();
-        if ((t == int('P')) || (t == int('p')))
-        { //Temp
-            robotController->compute_path_func();
-            continue;
-        }
         if ((t == int('A')) || (t == int('a')))
         { //Temp
             robotController->reset_cylinder();
@@ -193,7 +188,7 @@ void automatedInput(RobotController *robotController)
     double yRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 1, -1, 0,  0};
     double zRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 1, -1};
 
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     geometry_msgs::Pose delta_pose;
     delta_pose.position.x = delta_pose.position.y = delta_pose.position.z = 0.0;
@@ -245,7 +240,7 @@ void automatedInput(RobotController *robotController)
 int main(int argc, char **argv)
 {
     RobotController *robotController;
-    robotController = new EndoCameleonRobotController();
+    robotController = new UR3RobotController();
 
     if (false == robotController->initialize(argc, argv))
     {

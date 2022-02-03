@@ -6,6 +6,44 @@
       <uri>model://sun</uri>
     </include>
     <gravity>0 0 0</gravity>
-	
+    <model name="EndEffectorSphere">
+       <pose>0 0 0 0 0 0</pose>
+       <link name="link">
+          <visual name="visual">
+             <transparency>0.0</transparency>
+             <geometry>
+                <sphere>
+                   <radius>0.01</radius>
+                </sphere>
+             </geometry>
+             <material>
+                <ambient>0.5 1 1 1</ambient>
+                <diffuse>0.5 1 1 1</diffuse>
+                <specular>0.1 0.1 0.1 1</specular>
+                <emissive>0 0 0 0</emissive>
+             </material>
+          </visual>
+       </link>
+    </model>
+    <model name="targetCylinder">
+       <pose>0 0 0 0 0 0</pose>
+       <link name="cylinder_link">
+          <visual name="visual">
+             <transparency>0.0</transparency>
+             <geometry>
+                <cylinder>
+                   <radius>0.005</radius>
+                   <length>0.02</length>
+                </cylinder>
+             </geometry>
+             <material>
+                <ambient>0.5 1 1 1</ambient>
+                <diffuse>0.5 1 1 1</diffuse>
+                <specular>0.1 0.1 0.1 1</specular>
+                <emissive>0 0 0 0</emissive>
+             </material>
+          </visual>
+       </link>
+      </model>
   </world>
 </sdf>

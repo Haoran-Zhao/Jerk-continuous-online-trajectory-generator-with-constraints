@@ -64,10 +64,10 @@ add_executable(robot_controller
 				src/GazeboMarker.h
 				src/GazeboModelState.cpp
         src/GazeboModelState.h
-				src/EndoCameleonPathComputation.cpp
-				src/EndoCameleonPathComputation.h
-				src/EndoCameleonRobotController.h
-				src/EndoCameleonRobotController.cpp
+				src/UR3PathComputation.cpp
+				src/UR3PathComputation.h
+				src/UR3RobotController.h
+				src/UR3RobotController.cpp
 				src/Utilities.h
 				src/Utilities.cpp
         src/Semaphore.cpp
