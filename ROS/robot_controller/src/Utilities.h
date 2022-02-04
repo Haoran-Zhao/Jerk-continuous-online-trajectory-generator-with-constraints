@@ -19,6 +19,8 @@ public:
     */
     ~Utilities();
 
+    static void correct_joint_range(double& current_x, double& current_y, double& current_z, double& target_x, double& target_y, double& target_z);
+
     /**
     * Converts a pose message to 4x4 matrix
     */

@@ -19,6 +19,24 @@ Utilities::~Utilities(){
 
 }
 
+void Utilities::correct_joint_range(double& current_x, double& current_y, double& current_z, double& target_x, double& target_y, double& target_z){
+  if(abs(target_x-current_x)> M_PI)
+  {
+    current_x = fmod(current_x+2*M_PI,2*M_PI);
+    target_x = fmod(target_x+2*M_PI,2*M_PI);
+  }
+  if(abs(target_y-current_y)> M_PI)
+  {
+    current_y = fmod(current_y+2*M_PI,2*M_PI);
+    target_y = fmod(target_y+2*M_PI,2*M_PI);
+  }
+  if(abs(target_z-current_z)> M_PI)
+  {
+    current_z = fmod(current_z+2*M_PI,2*M_PI);
+    target_z = fmod(target_z+2*M_PI,2*M_PI);
+  }
+}
+
 /*
 	IN 			: Pose message
 	OUT 		: 4x4 frame matrix
