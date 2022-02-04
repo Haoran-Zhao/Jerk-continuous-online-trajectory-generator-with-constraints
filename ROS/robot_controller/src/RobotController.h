@@ -55,7 +55,8 @@ public:
 
 protected:
     ros::Publisher _twist_stamped_pub;
-
+    ros::Publisher _twist_stamped_joint_pub;
+    bool _Cartesian_compute;
     /* To record joint states*/
     ros::Subscriber  _joint_state_sub;
     void jointCallback(const sensor_msgs::JointState& state);

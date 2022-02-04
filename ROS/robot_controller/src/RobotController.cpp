@@ -14,6 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
+    _Cartesian_compute=true;
 }
 
 RobotController::~RobotController() {
@@ -80,17 +81,19 @@ bool RobotController::initialize(int argc, char **argv) {
         //Semaphore used to notify availablity of new cylinder pose to compute path
         _new_position_available_sem = new Semaphore(0, 0);
 
-        //Thread that does robot movement
-        //_robot_movement_thread = std::thread(&RobotController::_robot_movement_thread_func, this);
-
-        _path_computation_thread = std::thread(&RobotController::_path_computation_thread_func, this);
-
         //ROS publisher to publish trajectory commands to the robot
         _joint_pub = _node_handle->advertise<trajectory_msgs::JointTrajectory>("/arm_controller/command", 1);
-
+        //Thread that does robot movement
+        if (_Cartesian_compute)
+        {
+        //_robot_movement_thread = std::thread(&RobotController::_robot_movement_thread_func, this);
+        _path_computation_thread = std::thread(&RobotController::_path_computation_thread_func, this);
         _twist_stamped_pub = _node_handle->advertise<geometry_msgs::TwistStamped>("/servo_server/delta_twist_cmds", 1 , true);
-
-        // _joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::jointCallback, this);
+        }
+        else{
+        _twist_stamped_joint_pub = _node_handle->advertise<geometry_msgs::TwistStamped>("/servo_server/delta_joint_cmds", 1 , true);
+        _joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::jointCallback, this);
+        }
     }
     catch (...) {
         cout << "Exception : " << endl;
@@ -202,6 +205,7 @@ void RobotController::_path_computation_thread_func(){
     path_thread.unlock();
     current_robot_pose = _move_group_ptr->getCurrentPose().pose;
     _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
+
     //Get the current end effector matrix
     current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
     Xe = current_end_effector_matrix.block<3,1>(0,3);
@@ -268,11 +272,10 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.linear.x = end_effector_linear_velocity.x();
     twist.twist.linear.y = end_effector_linear_velocity.y();
     twist.twist.linear.z = end_effector_linear_velocity.z();
-    twist.twist.angular.x = end_effector_angular_velocity.x();
-    twist.twist.angular.y = end_effector_angular_velocity.y();
-    twist.twist.angular.z = end_effector_angular_velocity.z();
+    twist.twist.angular.x = isnan(end_effector_angular_velocity.x())? 0 : end_effector_angular_velocity.x();
+    twist.twist.angular.y = isnan(end_effector_angular_velocity.y())? 0 : end_effector_angular_velocity.y();
+    twist.twist.angular.z = isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
     _twist_stamped_pub.publish(twist);
-
     cmd_rate.sleep();
   }
 }
