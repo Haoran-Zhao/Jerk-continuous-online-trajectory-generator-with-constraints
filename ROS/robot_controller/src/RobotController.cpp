@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=true;
+    _Cartesian_compute=false;
 }
 
 RobotController::~RobotController() {
@@ -86,13 +86,16 @@ bool RobotController::initialize(int argc, char **argv) {
         //Thread that does robot movement
         if (_Cartesian_compute)
         {
-        //_robot_movement_thread = std::thread(&RobotController::_robot_movement_thread_func, this);
-        _path_computation_thread = std::thread(&RobotController::_path_computation_thread_func, this);
-        _twist_stamped_pub = _node_handle->advertise<geometry_msgs::TwistStamped>("/servo_server/delta_twist_cmds", 1 , true);
+          //_robot_movement_thread = std::thread(&RobotController::_robot_movement_thread_func, this);
+          _path_computation_thread = std::thread(&RobotController::_path_computation_thread_func, this);
+          _twist_stamped_pub = _node_handle->advertise<geometry_msgs::TwistStamped>("/servo_server/delta_twist_cmds", 1 , true);
         }
         else{
-        _twist_stamped_joint_pub = _node_handle->advertise<geometry_msgs::TwistStamped>("/servo_server/delta_joint_cmds", 1 , true);
-        _joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::jointCallback, this);
+          //Initialize kdl solver
+          _kdl_initialize();
+          _twist_stamped_joint_pub = _node_handle->advertise<control_msgs::JointJog>("/servo_server/delta_joint_cmds", 1 , true);
+          //_joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::_Joint_state_cb, this);
+          _joint_computation_thread = std::thread(&RobotController::_joint_computation_thread_func, this);
         }
     }
     catch (...) {
@@ -157,6 +160,57 @@ void RobotController::_initialize_gazebo_models() {
     tf2::Quaternion cylinder_quat(cylinder_pose.orientation.x, cylinder_pose.orientation.y, cylinder_pose.orientation.z, cylinder_pose.orientation.w);
 
     _model_state.set_model_position_world("targetCylinder", cylinder_pose);
+}
+
+
+void RobotController::_kdl_initialize()
+{
+  KDL::Tree my_tree;
+  string robot_desc_string;
+  _node_handle->param("/robot_description", robot_desc_string, string());
+  if(!kdl_parser::treeFromString(robot_desc_string, my_tree))
+  {
+    ROS_ERROR("Fail to Construct kdl tree");
+  }
+  else
+  {
+    ROS_INFO("Succesfully Construct kdl tree");
+  }
+  // std::cout << robot_desc_string << '\n';
+  my_tree.getChain("base_link", "tool0", _my_chain);
+
+  unsigned int numJoint = _my_chain.getNrOfJoints();
+  _fk_solver = new KDL::ChainFkSolverPos_recursive(_my_chain);
+  _ik_solver_pinv = new KDL::ChainIkSolverVel_pinv(_my_chain);
+  _ik_solver = new KDL::ChainIkSolverPos_NR(_my_chain, *_fk_solver, *_ik_solver_pinv, 100,1e-6); //max 100 iterations and stop by an accuracy of 1e-6;
+
+  if (_my_chain.getNrOfJoints() == 0)
+  {
+      ROS_INFO("Failed to initialize kinematic chain");
+  }
+  else
+  {
+      ROS_INFO("Num of joints in the chain: %u", _my_chain.getNrOfJoints());
+  }
+  _joint_state = KDL::JntArrayVel(numJoint);
+  _joint_name = {"shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"};
+}
+
+void RobotController::_Joint_state_cb(const sensor_msgs::JointStateConstPtr& msg)
+{
+  _joint_state.q(0) = msg->position[2];
+  _joint_state.q(1) = msg->position[1];
+  _joint_state.q(2) = msg->position[0];
+  _joint_state.q(3) = msg->position[3];
+  _joint_state.q(4) = msg->position[4];
+  _joint_state.q(5) = msg->position[5];
+
+  _joint_state.qdot(0) = msg->velocity[2];
+  _joint_state.qdot(1) = msg->velocity[1];
+  _joint_state.qdot(2) = msg->velocity[0];
+  _joint_state.qdot(3) = msg->velocity[3];
+  _joint_state.qdot(4) = msg->velocity[4];
+  _joint_state.qdot(5) = msg->velocity[5];
 }
 
 /*
@@ -255,7 +309,7 @@ void RobotController::_path_computation_thread_func(){
     damp_pose.position.y = damp_position.y();
     damp_pose.position.z = damp_position.z();
     Eigen::Matrix4d damp_frame = Utilities::pose_to_matrix(damp_pose);
-
+//https://math.stackexchange.com/questions/668866/how-do-you-find-angular-velocity-given-a-pair-of-3x3-rotation-matrices
     Eigen::Matrix3d cur_rot = current_end_effector_matrix.block<3,3>(0,0);
     Eigen::Matrix3d target_rot = damp_frame.block<3,3>(0,0);
     Eigen::Matrix3d a = target_rot * cur_rot.transpose();
@@ -277,6 +331,62 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.angular.z = isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
     _twist_stamped_pub.publish(twist);
     cmd_rate.sleep();
+  }
+}
+
+void RobotController::_joint_computation_thread_func(){
+  double smoothTime = 1;
+  double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
+  double publish_period = 0.008;
+  ros::Rate cmd_rate(1 / publish_period);
+  control_msgs::JointJog joint_deltas;
+  joint_deltas.joint_names = _joint_name;
+  joint_deltas.header.frame_id = "world";
+  geometry_msgs::Pose current_robot_pose = _move_group_ptr->getCurrentPose().pose;
+  vector<double> current_robot_joint = _move_group_ptr->getCurrentJointValues();
+  Eigen::Matrix4d current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
+  _target_matrix = Utilities::pose_to_matrix(_model_state.get_model_position_world("targetCylinder"));
+
+  Eigen::Vector3d current_angular_velocity,current_angular_acceleration;
+  Eigen::Vector3d Xe,Xt; //target postion
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  while (ros::ok())
+  {
+    path_thread.lock();
+    Eigen::Matrix4d target_matrix = _target_matrix;
+    path_thread.unlock();
+    current_robot_pose = _move_group_ptr->getCurrentPose().pose;
+    current_robot_joint = _move_group_ptr->getCurrentJointValues();
+    _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
+
+    //Get the current end effector matrix
+    current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
+    Xe = current_end_effector_matrix.block<3,1>(0,3);
+    //Set Xt as the target position
+    Xt = target_matrix.block<3, 1>(0, 3);
+    KDL::JntArray q_init(_my_chain.getNrOfJoints());
+    q_init(0) = current_robot_joint[0];
+    q_init(1) = current_robot_joint[1];
+    q_init(2) = current_robot_joint[2];
+    q_init(3) = current_robot_joint[3];
+    q_init(4) = current_robot_joint[4];
+    q_init(5) = current_robot_joint[5];
+    KDL::JntArray q_out(_my_chain.getNrOfJoints());
+    KDL::Frame dest_frame(KDL::Vector(Xt(0), Xt(1), Xt(2)));
+    if (_ik_solver->CartToJnt(q_init, dest_frame, q_out) < 0) {
+       ROS_ERROR( "Something really bad happened. You are in trouble now");
+   } else {
+       // parse output of ik_solver to the robot
+
+       for (unsigned int j = 0; j < q_out.rows(); j++) {
+           std::cout << q_out(1, j) * 180 / 3.14 << "  ";
+       }
+       std::cout << std::endl;
+   }
+
+   joint_deltas.header.stamp = ros::Time::now();
+   _twist_stamped_joint_pub.publish(joint_deltas);
+   cmd_rate.sleep();
   }
 }
 

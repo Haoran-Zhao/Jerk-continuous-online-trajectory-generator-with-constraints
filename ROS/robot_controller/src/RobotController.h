@@ -1,5 +1,18 @@
 #pragma once
-
+#include <kdl/jntarray.hpp>
+#include <kdl/frames.hpp>
+#include <kdl_parser/kdl_parser.hpp>
+#include <kdl/chain.hpp>
+#include <kdl/chainfksolver.hpp>
+#include <kdl/chainiksolver.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/frames_io.hpp>
+#include <kdl/chainiksolvervel_pinv.hpp>
+#include <kdl/chainiksolverpos_nr.hpp>
+#include "kdl_conversions/kdl_msg.h"
+#include "tf_conversions/tf_kdl.h"
+#include <tf/tf.h>
+#include <tf_conversions/tf_eigen.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include "GazeboMarker.h"
 #include "GazeboModelState.h"
@@ -7,6 +20,7 @@
 #include "PathComputation.h"
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/JointState.h>
+#include "control_msgs/JointJog.h"
 #include <cmath>
 class RobotController {
 public:
@@ -56,9 +70,40 @@ public:
 protected:
     ros::Publisher _twist_stamped_pub;
     ros::Publisher _twist_stamped_joint_pub;
+    /**
+    * RObot chain for kdl solver
+    */
+    KDL::Chain _my_chain;
+    /**
+    *   joint names
+    */
+    std::vector<string> _joint_name;
+    /**
+    *   kdl forward kinematic solver
+    */
+    KDL::ChainFkSolverPos_recursive* _fk_solver;
+    /**
+    /**
+    *   kdl forward kinematic solver
+    */
+    KDL::ChainIkSolverVel_pinv* _ik_solver_pinv;
+
+    KDL::ChainIkSolverPos_NR* _ik_solver;
+    /**
+    /**
+    *   joint states
+    */
+    KDL::JntArrayVel _joint_state;
     bool _Cartesian_compute;
+    /**
     /* To record joint states*/
     ros::Subscriber  _joint_state_sub;
+
+    /**
+    * Joint state subscirber callback
+    */
+    void _Joint_state_cb(const sensor_msgs::JointStateConstPtr& msg);
+
     void jointCallback(const sensor_msgs::JointState& state);
     std::stringstream joint_stream;
 
@@ -135,7 +180,7 @@ protected:
     std::thread _robot_movement_thread;
 
     std::thread _path_computation_thread;
-
+    std::thread _joint_computation_thread;
     /**
     * Points to semaphore object which notifies if cylinder position is updated
     */
@@ -155,7 +200,7 @@ protected:
     * Moves the robot to the initial named position specified in the moveit setup file
     */
     void _move_to_initial_position();
-
+    void _kdl_initialize();
     /**
     * Updates the cylinder position to the deltapose value
     */
@@ -167,7 +212,7 @@ protected:
     void _robot_movement_thread_func();
 
     void _path_computation_thread_func();
-
+    void _joint_computation_thread_func();
    /**
    * Moves the robot through a list of specified waypoints moveit trajectory planner
    * @param wayPoints List of waypoints
