@@ -1,9 +1,11 @@
 #pragma once
-
+#include <iostream>
+#include <vector>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <ruckig/ruckig.hpp>
+using namespace std;
 
 class Utilities {
 
@@ -105,6 +107,7 @@ public:
                                  double maxSpeed, double deltaTime);
 
     static Eigen::Vector3d RuckigCalculation(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d &currentVelocity, Eigen::Vector3d &currentAcceleration, double maxVel, double maxAccel, double maxJerk, double deltaTime);
+    static vector<double> RuckigCalculation_Jnt(vector<double> current, vector<double> target, vector<double> &currentVelocity, vector<double> &currentAcceleration, double maxVel, double maxAccel, double maxJerk, double deltaTime);
 
     static double get_angle_betweem_vectors(Eigen::Vector3d a, Eigen::Vector3d b, Eigen::Vector3d n);
 

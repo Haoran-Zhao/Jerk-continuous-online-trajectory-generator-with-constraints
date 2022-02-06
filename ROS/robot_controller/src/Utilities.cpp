@@ -219,7 +219,7 @@ Eigen::Vector3d Utilities::RuckigCalculation(Eigen::Vector3d current, Eigen::Vec
   // Set input parameters
   input.current_position = {current(0), current(1), current(2)};
   input.current_velocity = {currentVelocity(0), currentVelocity(1), currentVelocity(2)};
-  input.current_acceleration = {currentAcceleration(1), currentAcceleration(1), currentAcceleration(2)};
+  input.current_acceleration = {currentAcceleration(0), currentAcceleration(1), currentAcceleration(2)};
 
   input.target_position = {target(0), target(1), target(2)};
   input.target_velocity = {0.0, 0.0, 0.0};
@@ -235,6 +235,39 @@ Eigen::Vector3d Utilities::RuckigCalculation(Eigen::Vector3d current, Eigen::Vec
   Eigen::Vector3d otg_pos(pos[0],pos[1],pos[2]);
   Eigen::Vector3d otg_vel(vel[0],vel[1],vel[2]);
   Eigen::Vector3d otg_accel(accel[0],accel[1],accel[2]);
+  // std::cout << "t | p1 | p2 | p3" << std::endl;
+  // std::cout << output.time << " " << pos[0] << " " << pos[1] << " " << pos[2] << " "<< vel[0] << " " << vel[1] << " " << vel[2] << " " << accel[0] << " " << accel[1] << " " << accel[2] << " " << std::endl;
+  // std::cout << output.time << " " << damp_position[0] << " " << damp_position[1] << " " << damp_position[2] << " "<< current_linear_velocity[0] << " " << current_linear_velocity[1] << " " << current_linear_velocity[2] << " " << std::endl;
+  // std::cout << "Calculation duration: " << output.calculation_duration << " [micros]." << std::endl;
+  currentVelocity = otg_vel;
+  currentAcceleration = otg_accel;
+  return otg_pos;
+}
+
+vector<double> Utilities::RuckigCalculation_Jnt(vector<double> current, vector<double> target, vector<double>& currentVelocity, vector<double> &currentAcceleration, double maxVel, double maxAccel, double maxJerk, double deltaTime)
+{
+
+  //test ruckig
+  ruckig::Ruckig<6> otg {deltaTime};  // control cycle
+  ruckig::InputParameter<6> input;
+  ruckig::OutputParameter<6> output;
+  // Set input parameters
+  input.current_position = {current[0], current[1], current[2], current[3], current[4], current[5]};
+  input.current_velocity = {currentVelocity[0], currentVelocity[1], currentVelocity[2], currentVelocity[3], currentVelocity[4], currentVelocity[5]};
+  input.current_acceleration = {currentAcceleration[0], currentAcceleration[1], currentAcceleration[2],currentAcceleration[3], currentAcceleration[4], currentAcceleration[5]};
+  input.target_position = {target[0], target[1], target[2],target[3], target[4], target[5]};
+  input.target_velocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  input.target_acceleration = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+  input.max_velocity = {maxVel, maxVel, maxVel, maxVel, maxVel, maxVel};
+  input.max_acceleration = {maxAccel, maxAccel, maxAccel, maxAccel, maxAccel, maxAccel};
+  input.max_jerk = {maxJerk, maxJerk, maxJerk, maxJerk, maxJerk, maxJerk};
+  otg.update(input, output);
+  auto& pos = output.new_position;
+  auto& vel = output.new_velocity;
+  auto& accel = output.new_acceleration;
+  vector<double> otg_pos(pos.begin(),pos.end());
+  vector<double> otg_vel(vel.begin(),vel.end());
+  vector<double> otg_accel(accel.begin(),accel.end());
   // std::cout << "t | p1 | p2 | p3" << std::endl;
   // std::cout << output.time << " " << pos[0] << " " << pos[1] << " " << pos[2] << " "<< vel[0] << " " << vel[1] << " " << vel[2] << " " << accel[0] << " " << accel[1] << " " << accel[2] << " " << std::endl;
   // std::cout << output.time << " " << damp_position[0] << " " << damp_position[1] << " " << damp_position[2] << " "<< current_linear_velocity[0] << " " << current_linear_velocity[1] << " " << current_linear_velocity[2] << " " << std::endl;

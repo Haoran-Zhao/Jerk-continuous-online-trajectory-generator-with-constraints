@@ -181,8 +181,8 @@ void RobotController::_kdl_initialize()
 
   unsigned int numJoint = _my_chain.getNrOfJoints();
   _fk_solver = new KDL::ChainFkSolverPos_recursive(_my_chain);
-  _ik_solver_pinv = new KDL::ChainIkSolverVel_pinv(_my_chain);
-  _ik_solver = new KDL::ChainIkSolverPos_NR(_my_chain, *_fk_solver, *_ik_solver_pinv, 100,1e-6); //max 100 iterations and stop by an accuracy of 1e-6;
+  _ik_solver_pinv = new KDL::ChainIkSolverVel_pinv(_my_chain, 0.0001, 1000);
+  _ik_solver = new KDL::ChainIkSolverPos_NR(_my_chain, *_fk_solver, *_ik_solver_pinv, 1000); //max 100 iterations and stop by an accuracy of 1e-6;
 
   if (_my_chain.getNrOfJoints() == 0)
   {
@@ -347,7 +347,7 @@ void RobotController::_joint_computation_thread_func(){
   Eigen::Matrix4d current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
   _target_matrix = Utilities::pose_to_matrix(_model_state.get_model_position_world("targetCylinder"));
 
-  Eigen::Vector3d current_angular_velocity,current_angular_acceleration;
+  vector<double> current_angular_velocity(6),current_angular_acceleration(6);
   Eigen::Vector3d Xe,Xt; //target postion
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
@@ -364,6 +364,9 @@ void RobotController::_joint_computation_thread_func(){
     Xe = current_end_effector_matrix.block<3,1>(0,3);
     //Set Xt as the target position
     Xt = target_matrix.block<3, 1>(0, 3);
+    Eigen::Matrix3d target_rot = target_matrix.block<3,3>(0,0);
+    KDL::Rotation tcp_target(target_rot(0,0),target_rot(0,1),target_rot(0,2),target_rot(1,0),target_rot(1,1),target_rot(1,2),target_rot(2,0),target_rot(2,1),target_rot(2,2));
+
     KDL::JntArray q_init(_my_chain.getNrOfJoints());
     q_init(0) = current_robot_joint[0];
     q_init(1) = current_robot_joint[1];
@@ -371,19 +374,37 @@ void RobotController::_joint_computation_thread_func(){
     q_init(3) = current_robot_joint[3];
     q_init(4) = current_robot_joint[4];
     q_init(5) = current_robot_joint[5];
+
+    //Compute current tcp position
+    KDL::Frame tcp_pos_start;
+    _fk_solver->JntToCart(q_init, tcp_pos_start);
+/*    ROS_INFO("Position read: %f %f %f", Xe(0), Xe(1), Xe(2));
+    ROS_INFO("Current tcp Position/Twist KDL:");
+    ROS_INFO("Position: %f %f %f", tcp_pos_start.p(0), tcp_pos_start.p(1), tcp_pos_start.p(2));
+    ROS_INFO("Orientation: %f %f %f", tcp_pos_start.M(0,0), tcp_pos_start.M(1,0), tcp_pos_start.M(2,0));
+*/
     KDL::JntArray q_out(_my_chain.getNrOfJoints());
-    KDL::Frame dest_frame(KDL::Vector(Xt(0), Xt(1), Xt(2)));
+    KDL::Frame dest_frame(tcp_target, KDL::Vector(Xt(0), Xt(1), Xt(2)));
     if (_ik_solver->CartToJnt(q_init, dest_frame, q_out) < 0) {
        ROS_ERROR( "Something really bad happened. You are in trouble now");
    } else {
        // parse output of ik_solver to the robot
-
-       for (unsigned int j = 0; j < q_out.rows(); j++) {
-           std::cout << q_out(1, j) * 180 / 3.14 << "  ";
+       /*
+       cout<<"current:"<<endl;
+       for (unsigned int j = 0; j <_my_chain.getNrOfJoints(); j++) {
+           std::cout << q_init(j) << "  ";
        }
        std::cout << std::endl;
+       cout<<"target:"<<endl;
+       for (unsigned int j = 0; j <_my_chain.getNrOfJoints(); j++) {
+           std::cout << q_out(j) << "  ";
+       }
+       std::cout << std::endl;
+       */
+       vector<double> target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
+       vector<double> damp_euler = Utilities::RuckigCalculation_Jnt(current_robot_joint, target_robot_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
+       joint_deltas.velocities = {current_angular_velocity[0],current_angular_velocity[1],current_angular_velocity[2],current_angular_velocity[3],current_angular_velocity[4],current_angular_velocity[5]};
    }
-
    joint_deltas.header.stamp = ros::Time::now();
    _twist_stamped_joint_pub.publish(joint_deltas);
    cmd_rate.sleep();
