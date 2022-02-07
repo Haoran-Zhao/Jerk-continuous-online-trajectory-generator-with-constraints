@@ -98,7 +98,7 @@ void modifyPose(geometry_msgs::Pose &delta_pose, int posIndex, int multiplier)
 {
     tf::Quaternion quat;
     quat.setEulerZYX(0.0, 0.0, 0.0);
-    double rot_step = 0.0174533 * 10;
+    double rot_step = 0.0174533;
     switch (posIndex)
     {
     case 0:

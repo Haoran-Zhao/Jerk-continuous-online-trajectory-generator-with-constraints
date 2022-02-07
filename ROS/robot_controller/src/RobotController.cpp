@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=false;
+    _Cartesian_compute=true;
 }
 
 RobotController::~RobotController() {
@@ -235,7 +235,7 @@ void RobotController::_robot_movement_thread_func() {
 
 void RobotController::_path_computation_thread_func(){
   double smoothTime = 1;
-  double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 10;
+  double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 100;
   double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
   double eulerXVelocity = 0.0, eulerYVelocity = 0.0, eulerZVelocity = 0.0;
   double publish_period = 0.008;
@@ -282,7 +282,7 @@ void RobotController::_path_computation_thread_func(){
     tf2::Matrix3x3(target_quat).getRPY(target_x, target_y, target_z);
 
     Utilities::correct_joint_range(current_x,current_y,current_z, target_x,target_y,target_z);
-    printf("current: %f %f %f, target: %f %f %f\n", current_x, current_y, current_z, target_x, target_y,target_z);
+    //printf("current: %f %f %f, target: %f %f %f\n", current_x, current_y, current_z, target_x, target_y,target_z);
 
     //Calculate Angular velocities and positions
     Eigen::Vector3d current_euler(current_x, current_y, current_z);
@@ -320,7 +320,7 @@ void RobotController::_path_computation_thread_func(){
     double angular_z = skew(1, 0);
     Eigen::Vector3d end_effector_angular_velocity(angular_x, angular_y, angular_z);
 
-    printf("angular vel :%f %f %f\n", end_effector_angular_velocity.x(),end_effector_angular_velocity.y(),end_effector_angular_velocity.z());
+    //printf("angular vel :%f %f %f\n", end_effector_angular_velocity.x(),end_effector_angular_velocity.y(),end_effector_angular_velocity.z());
 
     twist.header.stamp = ros::Time::now();
     twist.twist.linear.x = end_effector_linear_velocity.x();

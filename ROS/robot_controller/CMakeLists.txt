@@ -39,7 +39,6 @@ catkin_package(
     moveit_ros_planning_interface
 )
 
-
 find_package(ignition-msgs1 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -55,7 +54,7 @@ include_directories(${Eigen3_INCLUDE_DIRS})
 
 include_directories(
 # include
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} src/OTG
 )
 
 add_executable(robot_controller
@@ -75,7 +74,15 @@ add_executable(robot_controller
         src/RobotController.cpp
         src/RobotController.h
         src/PathComputation.cpp
-        src/PathComputation.h)
+        src/PathComputation.h
+        src/OTG/poly34.cpp
+        src/OTG/poly34.h
+        src/OTG/profileSegments.cpp
+        src/OTG/profileSegments.h
+        src/OTG/profileSegmentsB.cpp
+        src/OTG/profileSegmentsB.h
+        src/OTG/TrigonometricOTG.cpp
+        src/OTG/TrigonometricOTG.h)
 
 target_compile_features(robot_controller PUBLIC cxx_std_17)
 target_link_libraries(robot_controller ${catkin_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES} ${OpenCV_LIBS})
