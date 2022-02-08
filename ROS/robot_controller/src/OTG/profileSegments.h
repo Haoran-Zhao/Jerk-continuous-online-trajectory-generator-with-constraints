@@ -17,6 +17,7 @@ public:
 	double alpha_;
 	double v0_, a0_;
 	double p0_, pG_;
+	vector<double> pre1_,pre2_,pre3_,pre4_,pre5_,pre6_,pre7_,pre8_,pre9_,pre10_,pre11_,pre12_,pre13_,pre14_,pre15_;
 	profileSeg(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t3, double t4, double t11, double t22, double t33, double maxJ, double maxA, double maxV);
 	~profileSeg();
 	vector<double> Seg1(double t);

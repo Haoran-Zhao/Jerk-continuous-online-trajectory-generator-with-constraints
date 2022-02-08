@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=true;
+    _Cartesian_compute=false;
 }
 
 RobotController::~RobotController() {
@@ -235,7 +235,7 @@ void RobotController::_robot_movement_thread_func() {
 
 void RobotController::_path_computation_thread_func(){
   double smoothTime = 1;
-  double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 100;
+  double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 10;
   double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
   double eulerXVelocity = 0.0, eulerYVelocity = 0.0, eulerZVelocity = 0.0;
   double publish_period = 0.008;
@@ -245,12 +245,23 @@ void RobotController::_path_computation_thread_func(){
 
   geometry_msgs::Pose current_robot_pose = _move_group_ptr->getCurrentPose().pose;
   Eigen::Matrix4d current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
+  Eigen::Vector3d last_target_pos;
   _target_matrix = Utilities::pose_to_matrix(_model_state.get_model_position_world("targetCylinder"));
 
-  Eigen::Vector3d Xt; //target postion
-  Eigen::Vector3d Xe = current_end_effector_matrix.block<3, 1>(0, 3);
-  Eigen::Vector3d current_linear_velocity,current_linear_acceleration, current_angular_velocity,current_angular_acceleration;
+  Eigen::Vector3d target_pos; //target postion
+  Eigen::Vector3d current_pos = current_end_effector_matrix.block<3, 1>(0, 3);
+  last_target_pos = current_pos;
 
+  geometry_msgs::Pose current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
+  tf2::Quaternion current_quat(current_ee_pose.orientation.x, current_ee_pose.orientation.y, current_ee_pose.orientation.z, current_ee_pose.orientation.w);
+  double current_x, current_y, current_z;
+  tf2::Matrix3x3(current_quat).getRPY(current_x, current_y, current_z);
+  Eigen::Vector3d last_target_euler(current_x, current_y, current_z);
+
+  Eigen::Vector3d current_linear_velocity,current_linear_acceleration, current_angular_velocity,current_angular_acceleration;
+  int idx_pos = 0, idx_euler=0;
+  vector<vector<vector<double>>> profile_pos, profile_euler;
+  Eigen::Vector3d damp_position, damp_euler;
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
   {
@@ -262,18 +273,20 @@ void RobotController::_path_computation_thread_func(){
 
     //Get the current end effector matrix
     current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
-    Xe = current_end_effector_matrix.block<3,1>(0,3);
-    //Set Xt as the target position
-    Xt = target_matrix.block<3, 1>(0, 3);
+    current_pos = current_end_effector_matrix.block<3,1>(0,3);
+    //Set target_pos as the target position
+    target_pos = target_matrix.block<3, 1>(0, 3);
+
     //Get the damp position
-    // Eigen::Vector3d damp_position = Utilities::SmoothDampVector(Xa, Xt, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
-    Eigen::Vector3d damp_position = Utilities::RuckigCalculation(Xe, Xt, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
+    //damp_position = Utilities::SmoothDampVector(Xa, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
+    damp_position = Utilities::RuckigCalculation(current_pos, target_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
+    //damp_position = Utilities::OTGCalculation(current_pos, target_pos, last_target_pos, profile_pos, idx_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, publish_period);
+
     Eigen::Vector3d end_effector_linear_velocity = current_linear_velocity;
 
     //Calculate orientation
-    geometry_msgs::Pose current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
+    current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
     tf2::Quaternion current_ee_quat(current_ee_pose.orientation.x, current_ee_pose.orientation.y, current_ee_pose.orientation.z, current_ee_pose.orientation.w);
-    double current_x, current_y, current_z;
     tf2::Matrix3x3(current_ee_quat).getRPY(current_x, current_y, current_z);
 
     geometry_msgs::Pose target_pose = Utilities::matrix_to_pose(target_matrix);
@@ -287,17 +300,68 @@ void RobotController::_path_computation_thread_func(){
     //Calculate Angular velocities and positions
     Eigen::Vector3d current_euler(current_x, current_y, current_z);
     Eigen::Vector3d target_euler(target_x, target_y, target_z);
-    //Eigen::Vector3d damp_euler = Utilities::SmoothDampVector(current_euler, target_euler, current_angular_velocity, smoothTime, max_angular_velocity, publish_period);
-    Eigen::Vector3d damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
-    //Send velocity commands to moveit servo
+    //damp_euler = Utilities::SmoothDampVector(current_euler, target_euler, current_angular_velocity, smoothTime, max_angular_velocity, publish_period);
+    //damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
+    //damp_euler = Utilities::OTGCalculation(current_euler, target_euler, last_target_euler, profile_euler, idx_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
 
+    if((last_target_euler-target_euler).norm()<=0.000001)
+    {
+      if((current_euler-target_euler).norm()<=0.000001 || idx_euler>=profile_euler[0].size()||profile_euler.empty())
+      {
+        printf("target: %f %f %f, current: %f %f %f\n", target_euler(0), target_euler(1),target_euler(2), current_euler(0), current_euler(1),current_euler(2));
+        current_angular_velocity = {0.0,0.0,0.0};
+        current_angular_acceleration = {0.0,0.0,0.0};
+        damp_euler = current_euler;
+        last_target_euler = target_euler;
+        idx_euler = 0;
+        profile_euler.clear();
+        printf("....");
+      }
+      else
+      {
+        printf("moveing...%d %d %d %d\n", profile_euler[0].size(), profile_euler[1].size(), profile_euler[2].size(), idx_euler);
+        printf("current: %f %f %f, expect: %f %f %f\n", current_euler(0), current_euler(1),current_euler(2), profile_euler[0][idx_euler][4], profile_euler[1][idx_euler][4],profile_euler[2][idx_euler][4]);
+        vector<double> profile_x = profile_euler[0][idx_euler];
+        vector<double> profile_y = profile_euler[1][idx_euler];
+        vector<double> profile_z = profile_euler[2][idx_euler];
+        printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+        current_angular_velocity = {profile_x[3], profile_y[3], profile_z[3]};
+        current_angular_acceleration = {profile_x[2], profile_y[2], profile_z[2]};
+        if (idx_euler+1 < profile_euler[0].size())
+        {
+          damp_euler = {profile_euler[0][idx_euler+1][4],profile_euler[1][idx_euler+1][4],profile_euler[2][idx_euler+1][4]};
+        }
+        else{
+          damp_euler = {profile_x[4],profile_y[4],profile_z[4]};
+        }
+        idx_euler+=1;
+      }
+    }
+    else
+    {
+      idx_euler = 0;
+      profile_euler.clear();
+      last_target_euler = target_euler;
+      profile_euler =Utilities::trajOTG(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity,max_angular_acceleration, max_angular_jerk, 0.01, publish_period);
+      vector<double> profile_x = profile_euler[0][idx_euler];
+      vector<double> profile_y = profile_euler[1][idx_euler];
+      vector<double> profile_z = profile_euler[2][idx_euler];
+      printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+      current_angular_velocity = {profile_x[3], profile_y[3], profile_z[3]};
+      current_angular_acceleration = {profile_x[2],profile_y[2],profile_z[2]};
+      damp_euler = {profile_euler[0][idx_euler+1][4],profile_euler[1][idx_euler+1][4],profile_euler[2][idx_euler+1][4]};
+      printf("start...\n");
+      printf("current: %f %f %f, expect: %f %f %f\n", current_euler(0), current_euler(1),current_euler(2), profile_euler[0][idx_euler][4], profile_euler[1][idx_euler][4],profile_euler[2][idx_euler][4]);
+      idx_euler+=1;
+    }
+
+    //Send velocity commands to moveit servo
     double x_cur = damp_euler.x();
     double y_cur = damp_euler.y();
     double z_cur = damp_euler.z();
     eulerXVelocity = current_angular_velocity.x();
     eulerYVelocity = current_angular_velocity.y();
     eulerZVelocity = current_angular_velocity.z();
-
     tf2::Quaternion quat_damp;
     quat_damp.setEulerZYX(z_cur, y_cur, x_cur);
     geometry_msgs::Pose damp_pose;
@@ -320,7 +384,7 @@ void RobotController::_path_computation_thread_func(){
     double angular_z = skew(1, 0);
     Eigen::Vector3d end_effector_angular_velocity(angular_x, angular_y, angular_z);
 
-    //printf("angular vel :%f %f %f\n", end_effector_angular_velocity.x(),end_effector_angular_velocity.y(),end_effector_angular_velocity.z());
+    //printf("angular vel :%f %f %f\n", end_effector_angular_velocity(0),end_effector_angular_velocity(1),end_effector_angular_velocity(2));
 
     twist.header.stamp = ros::Time::now();
     twist.twist.linear.x = end_effector_linear_velocity.x();
@@ -329,6 +393,9 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.angular.x = isnan(end_effector_angular_velocity.x())? 0 : end_effector_angular_velocity.x();
     twist.twist.angular.y = isnan(end_effector_angular_velocity.y())? 0 : end_effector_angular_velocity.y();
     twist.twist.angular.z = isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
+    //printf("linear vel: %f %f %f\n", twist.twist.linear.x,twist.twist.linear.y,twist.twist.linear.z);
+    //printf("angular vel: %f %f %f\n", twist.twist.angular.x,twist.twist.angular.y,twist.twist.angular.z);
+
     _twist_stamped_pub.publish(twist);
     cmd_rate.sleep();
   }
@@ -346,9 +413,13 @@ void RobotController::_joint_computation_thread_func(){
   vector<double> current_robot_joint = _move_group_ptr->getCurrentJointValues();
   Eigen::Matrix4d current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
   _target_matrix = Utilities::pose_to_matrix(_model_state.get_model_position_world("targetCylinder"));
-
+  vector<double> target_robot_joint, last_target_joint;
+  target_robot_joint = current_robot_joint;
+  last_target_joint = target_robot_joint;
   vector<double> current_angular_velocity(6),current_angular_acceleration(6);
-  Eigen::Vector3d Xe,Xt; //target postion
+  Eigen::Vector3d current_pos,target_pos; //target postion
+  int idx_joint=0;
+  vector<vector<vector<double>>> profile_joint;
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
   {
@@ -361,9 +432,9 @@ void RobotController::_joint_computation_thread_func(){
 
     //Get the current end effector matrix
     current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
-    Xe = current_end_effector_matrix.block<3,1>(0,3);
-    //Set Xt as the target position
-    Xt = target_matrix.block<3, 1>(0, 3);
+    current_pos = current_end_effector_matrix.block<3,1>(0,3);
+    //Set target_pos as the target position
+    target_pos = target_matrix.block<3, 1>(0, 3);
     Eigen::Matrix3d target_rot = target_matrix.block<3,3>(0,0);
     KDL::Rotation tcp_target(target_rot(0,0),target_rot(0,1),target_rot(0,2),target_rot(1,0),target_rot(1,1),target_rot(1,2),target_rot(2,0),target_rot(2,1),target_rot(2,2));
 
@@ -378,13 +449,13 @@ void RobotController::_joint_computation_thread_func(){
     //Compute current tcp position
     KDL::Frame tcp_pos_start;
     _fk_solver->JntToCart(q_init, tcp_pos_start);
-/*    ROS_INFO("Position read: %f %f %f", Xe(0), Xe(1), Xe(2));
+/*    ROS_INFO("Position read: %f %f %f", current_pos(0), current_pos(1), current_pos(2));
     ROS_INFO("Current tcp Position/Twist KDL:");
     ROS_INFO("Position: %f %f %f", tcp_pos_start.p(0), tcp_pos_start.p(1), tcp_pos_start.p(2));
     ROS_INFO("Orientation: %f %f %f", tcp_pos_start.M(0,0), tcp_pos_start.M(1,0), tcp_pos_start.M(2,0));
 */
     KDL::JntArray q_out(_my_chain.getNrOfJoints());
-    KDL::Frame dest_frame(tcp_target, KDL::Vector(Xt(0), Xt(1), Xt(2)));
+    KDL::Frame dest_frame(tcp_target, KDL::Vector(target_pos(0), target_pos(1), target_pos(2)));
     if (_ik_solver->CartToJnt(q_init, dest_frame, q_out) < 0) {
        ROS_ERROR( "Something really bad happened. You are in trouble now");
    } else {
@@ -401,8 +472,9 @@ void RobotController::_joint_computation_thread_func(){
        }
        std::cout << std::endl;
        */
-       vector<double> target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
+       target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
        vector<double> damp_euler = Utilities::RuckigCalculation_Jnt(current_robot_joint, target_robot_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
+       //vector<double> damp_euler = Utilities::OTGCalculation_Jnt(current_robot_joint, target_robot_joint, last_target_joint, profile_joint, idx_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
        joint_deltas.velocities = {current_angular_velocity[0],current_angular_velocity[1],current_angular_velocity[2],current_angular_velocity[3],current_angular_velocity[4],current_angular_velocity[5]};
    }
    joint_deltas.header.stamp = ros::Time::now();

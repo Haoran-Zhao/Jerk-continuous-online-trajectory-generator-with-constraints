@@ -22,6 +22,8 @@
 #include <sensor_msgs/JointState.h>
 #include "control_msgs/JointJog.h"
 #include <cmath>
+#include<TrigonometricOTG.h>
+
 class RobotController {
 public:
     /**

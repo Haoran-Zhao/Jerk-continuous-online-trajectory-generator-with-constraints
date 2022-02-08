@@ -3,9 +3,14 @@
 #define eps           0.00000000001
 TrigonometricOTG::TrigonometricOTG() {};
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, double rate): num_dof_(num_dof), mJ_(vector<double>(num_dof)), mA_(vector<double>(num_dof)), mV_(vector<double>(num_dof)), rate_(rate) {};
+TrigonometricOTG::TrigonometricOTG(int num_dof, double rate) : num_dof_(num_dof), mJ_(vector<double>(num_dof)), mA_(vector<double>(num_dof)), mV_(vector<double>(num_dof)), rate_(rate) { complete_ = false; dur_ = 0; };
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, double rate) :num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), rate_(rate) {};
+TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, double rate) :num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), rate_(rate) { complete_ = false; dur_ = 0;};
+
+TrigonometricOTG::TrigonometricOTG(int num_dof, vector<double> mJ, vector<double> mA, vector<double> mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, vector<double> alpha, double rate) : num_dof_(num_dof), mJ_(mJ), mA_(mA), mV_(mV), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(alpha), rate_(rate) { complete_ = false; dur_ = 0;};
+
+TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, double alpha, double rate):num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(vector<double>(num_dof, alpha)), rate_(rate) { complete_ = false; dur_ = 0;};
+
 
 TrigonometricOTG::~TrigonometricOTG() {};
 
@@ -62,7 +67,7 @@ vector<double> TrigonometricOTG::typeII(double v0, double a0, double p0, double 
 
     // x - array of size 2
         // return 2: 2 real roots x[0], x[1]
-        // return 0: pair of complex roots: x[0]±i*x[1]
+        // return 0: pair of complex roots: x[0]ï¿½i*x[1]
     vector<double> x(2);
     int idx = SolveP2(x, c1 / c2, c0 / c2);
     double t33;
@@ -196,8 +201,8 @@ vector<double> TrigonometricOTG::typeVI(double v0, double a0, double p0, double 
     int idx = SolveP4(x,  c3/c4,  c2/c4,  c1/c4,  c0/c4); // solve equation x^4 + a*x^3 + b*x^2 + c*x + d by Dekart-Euler method
     // x - array of size 4
     // return 4: 4 real roots x[0], x[1], x[2], x[3], possible multiple roots
-    // return 2: 2 real roots x[0], x[1] and complex x[2]±i*x[3], 
-    // return 0: two pair of complex roots: x[0]±i*x[1],  x[2]±i*x[3]
+    // return 2: 2 real roots x[0], x[1] and complex x[2]ï¿½i*x[3],
+    // return 0: two pair of complex roots: x[0]ï¿½i*x[1],  x[2]ï¿½i*x[3]
     double t1, t2, t3, t4, t11, t22, t33;
     if (idx == 4)
     {
@@ -244,7 +249,7 @@ vector<double> TrigonometricOTG::typeVIII(double v0, double a0, double p0, doubl
     double c0, c1, c2, c3;
     c0 = p0 + (-18 * a0 * Jpeak * Pi * v0 * (1 + alpha) * pow(Pi + 4 * alpha - Pi * alpha, 2) +
         pow(a0, 3) * (24 * Pi * (-1 + alpha) * pow(alpha, 2) - 96 * pow(alpha, 3) - 6 * pow(Pi, 2) * alpha * pow(1 + alpha, 2) + pow(Pi, 3) * (-1 + alpha) * (2 + alpha) * (1 + 2 * alpha))) /
-        (6. * pow(Jpeak, 2) * pow(Pi * (-1 + alpha) - 4 * alpha, 3))-pG; 
+        (6. * pow(Jpeak, 2) * pow(Pi * (-1 + alpha) - 4 * alpha, 3))-pG;
 
     c1 = (8 * v0 * (1 + alpha) + (pow(a0, 2) * (-24 * Pi * (-1 + alpha) * pow(alpha, 2) + 96 * pow(alpha, 3) + 30 * pow(Pi, 2) * alpha * pow(1 + alpha, 2) +
             pow(Pi, 3) * (8 + alpha * (9 - alpha * (9 + 8 * alpha))))) / (Jpeak * Pi * pow(Pi + 4 * alpha - Pi * alpha, 2))) / (2. * alpha);
@@ -258,7 +263,7 @@ vector<double> TrigonometricOTG::typeVIII(double v0, double a0, double p0, doubl
     int idx = SolveP3(x, c2/c3,  c1/c3,  c0/c3);// solve cubic equation x^3 + a*x^2 + b*x + c = 0
     //3 real roots : = > x[0], x[1], x[2], return 3
         //         2 real roots: x[0], x[1],          return 2
-        //         1 real root : x[0], x[1] ± i*x[2], return 1
+        //         1 real root : x[0], x[1] ï¿½ i*x[2], return 1
     double t1, t2, t3, t4, t11, t22, t33;
     if (idx == 1)
     {
@@ -294,7 +299,7 @@ vector<double> TrigonometricOTG::brakeCalculate(double v0, double a0, double p0,
 
         // x - array of size 2
         // return 2: 2 real roots x[0], x[1]
-        // return 0: pair of complex roots: x[0]±i*x[1]
+        // return 0: pair of complex roots: x[0]ï¿½i*x[1]
         vector<double> x(2);
         int idx = SolveP2(x, c1/c2, c0/c2);
         if (idx == 2)
@@ -539,7 +544,7 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorB(double v0, double a0, do
     double pt = p0 + dist;
     double dur1 = 2 * t11b + t22b;
     double dur2 = t1b + t2b + t1b;
-    double total = dur1 + 2 * dur2 + t3b; 
+    double total = dur1 + 2 * dur2 + t3b;
     double t = 0;
     while (t <= total)
     {
@@ -551,8 +556,8 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorB(double v0, double a0, do
 
     return ans;
 };
-vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, double p0, double pG, double alpha, double maxJ, double maxA, double maxV) {
-    double Vpeak=maxV, Apeak=maxA, Jpeak=maxJ; 
+vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, double p0, double pG, double alpha, double maxJ, double maxA, double maxV, double duration) {
+    double Vpeak=maxV, Apeak=maxA, Jpeak=maxJ;
     double t1, t2, t3, t4, t11, t22, t33;
     vector<vector<double>> ans;
     if (pG - p0 < 0) {
@@ -578,7 +583,7 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
     vector<double> cand7 = typeVII(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
     vector<double> cand8 = typeVIII(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
     vector<vector<double>> candidates = { cand1,cand2,cand3,cand4,cand5, cand6, cand7, cand8 };
-    vector<double> res = filterResults(candidates, v0, a0, p0, pG, Jpeak, Apeak, Vpeak); 
+    vector<double> res = filterResults(candidates, v0, a0, p0, pG, Jpeak, Apeak, Vpeak);
     //cout << res.size()<<endl;
     if (!res.empty())
     {
@@ -589,12 +594,12 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
         t11 = res[4];
         t22 = res[5];
         t33 = res[6];
-        printf("no brake: %f %f %f %f %f %f %f\n", t1, t2, t3, t4, t11, t22, t33);
+        //printf("no brake: %f %f %f %f %f %f %f\n", t1, t2, t3, t4, t11, t22, t33);
         double dur1 = 2 * t11 + t22 + t33;
         double dur2 = t1 + t2 + t1;
         double total = dur1 + 3 * dur2 + t3 + t4;
         double t = 0;
-        while (t <= total)
+        while (t <= duration)
         {
             vector<double> temp = profileGenerator(v0,a0,p0,pG,alpha,t1,t2,t3,t4,t11,t22,t33,Jpeak,Apeak,Vpeak,t);
             temp.insert(temp.begin(), t);
@@ -617,8 +622,8 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
         double dur2 = t1b + t2b + t1b;
         double total = dur1 + 2 * dur2 + t3b;
         double t = 0;
-        printf("brake: %f %f %f %f %f\n", t1b, t2b, t3b, t11b, t22b);
-        while (t <= total)
+        //printf("brake: %f %f %f %f %f\n", t1b, t2b, t3b, t11b, t22b);
+        while (t < total)
         {
             vector<double> temp = profileGeneratorB(v0, a0, p0, pt, alpha, t1b, t2b, t3b, t11b, t22b, maxJ, maxA, maxV,t);
             temp.insert(temp.begin(), t);
@@ -626,12 +631,12 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
             t += rate_;
         }
        /* printf("%f %f", total, t);*/
-        vector<vector<double>> profileZ = trajGeneratorZ(pt, pG, alpha, maxJ, maxA, maxV,t-total, total);
+        vector<vector<double>> profileZ = trajGeneratorZ(pt, pG, alpha, maxJ, maxA, maxV,t-total, total,duration);
         ans.insert(ans.end(),profileZ.begin(), profileZ.end());
     }
     return ans;
 };
-vector<vector<double>> TrigonometricOTG::trajGeneratorZ(double p0, double pG, double alpha, double maxJ, double maxA, double maxV, double t, double pret) {
+vector<vector<double>> TrigonometricOTG::trajGeneratorZ(double p0, double pG, double alpha, double maxJ, double maxA, double maxV, double t, double pret,double duration) {
     double Vpeak = maxV, Apeak = maxA, Jpeak = maxJ;
     double t1, t2, t3, t4;
     vector<vector<double>> ans;
@@ -701,20 +706,55 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorZ(double p0, double pG, do
     {
         Jpeak = -Jpeak;
     }
-    printf("zTraj: %f %f %f %f\n", t1, t2, t3, t4);
+    //printf("zTraj: %f %f %f %f\n", t1, t2, t3, t4);
     double total = 8 * t1 + 4 * t2 + 2 * t3 + t4;
-    while (t <= total)
+    while (t <= duration-pret)
     {
         vector<double> temp = profileGenerator(0, 0, p0, pG, alpha, t1, t2, t3, t4, t1, t2, t3, Jpeak, Apeak, Vpeak,t);
         temp.insert(temp.begin(), t+pret);
         ans.push_back(temp);
         t += rate_;
     }
-    
+
     return ans;
 };
 
+vector<vector<vector<double>>> TrigonometricOTG::trajGenerator()
+{
+    double dur = 0;
+    for (int i = 0; i < num_dof_; i++)
+    {
+        double v0 = v0_[i];
+        double a0 = a0_[i];
+        double p0 = p0_[i];
+        double pG = pG_[i];
+        double Jpeak = mJ_[i];
+        double Vpeak = mV_[i];
+        double Apeak = mA_[i];
+        double alpha = alpha_[i];
 
+        vector<double> temp = trajTimeT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
+        dur = max(dur, temp.back());
+    }
+    //printf("duration: %f \n", dur);
+    vector<vector<vector<double>>> ans;
+    for (int i = 0; i < num_dof_; i++)
+    {
+        double v0 = v0_[i];
+        double a0 = a0_[i];
+        double p0 = p0_[i];
+        double pG = pG_[i];
+        double Jpeak = mJ_[i];
+        double Vpeak = mV_[i];
+        double Apeak = mA_[i];
+        double alpha = alpha_[i];
+
+        vector<vector<double>> temp = trajGeneratorT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak, dur);
+        ans.push_back(temp);
+    }
+
+    return ans;
+}
 vector<double> TrigonometricOTG::trajTimeB(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak) {
     vector<double> res = brakeCalculate(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
     vector<double> ans;
@@ -764,7 +804,10 @@ vector<double> TrigonometricOTG::trajTimeT(double v0, double a0, double p0, doub
         t11 = res[4];
         t22 = res[5];
         t33 = res[6];
-        ans = { t1,t2,t3,t4,t11,t22,t33 };
+        double dur1 = 2 * t11 + t22 + t33;
+        double dur2 = t1 + t2 + t1;
+        double total = dur1 + 3 * dur2 + t3 + t4;
+        ans = { t1,t2,t3,t4,t11,t22,t33, total};
     }
     else
     {
@@ -778,9 +821,14 @@ vector<double> TrigonometricOTG::trajTimeT(double v0, double a0, double p0, doub
         double dist = brakeresult[5];
         double pt = p0 + dist;
         /*printf("brake: %f %f %f %f %f %f\n", t1b, t2b, t3b, t11b, t22b);*/
+        double dur1 = 2 * t11b + t22b;
+        double dur2 = t1b + t2b + t1b;
+        double total = dur1 + 2 * dur2 + t3b;
         ans = { t1b,t2b,t3b,t11b,t22b };
         vector<double> timeZ = trajTimeZ(pt, pG, alpha, maxJ, maxA, maxV);
+        total += (8*timeZ[0] + 4*timeZ[1]+ 2*timeZ[2]+timeZ[3]);
         ans.insert(ans.end(), timeZ.begin(), timeZ.end());
+        ans.push_back(total);
     }
     return ans;
 };
@@ -836,6 +884,6 @@ vector<double> TrigonometricOTG::trajTimeZ(double p0, double pG, double alpha, d
     }
 
     /*printf("zTraj: %f %f %f %f", t1, t2, t3, t4);*/
-   
+
     return {t1,t2,t3,t4};
 };
