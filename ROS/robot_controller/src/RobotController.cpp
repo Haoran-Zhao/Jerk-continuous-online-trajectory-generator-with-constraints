@@ -340,9 +340,9 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.linear.x = end_effector_linear_velocity.x();
     twist.twist.linear.y = end_effector_linear_velocity.y();
     twist.twist.linear.z = end_effector_linear_velocity.z();
-    twist.twist.angular.x = 0;//isnan(end_effector_angular_velocity.x())? 0 : end_effector_angular_velocity.x();
-    twist.twist.angular.y = 0;//isnan(end_effector_angular_velocity.y())? 0 : end_effector_angular_velocity.y();
-    twist.twist.angular.z = 0;//isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
+    twist.twist.angular.x = isnan(end_effector_angular_velocity.x())? 0 : end_effector_angular_velocity.x();
+    twist.twist.angular.y = isnan(end_effector_angular_velocity.y())? 0 : end_effector_angular_velocity.y();
+    twist.twist.angular.z = isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
     //printf("linear vel: %f %f %f\n", twist.twist.linear.x,twist.twist.linear.y,twist.twist.linear.z);
     //printf("angular vel: %f %f %f\n", twist.twist.angular.x,twist.twist.angular.y,twist.twist.angular.z);
     _twist_stamped_pub.publish(twist);
