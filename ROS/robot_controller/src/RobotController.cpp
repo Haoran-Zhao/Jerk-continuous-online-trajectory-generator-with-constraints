@@ -237,8 +237,9 @@ void RobotController::_path_computation_thread_func(){
   double smoothTime = 1;
   double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 10;
   double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
+  double alpha=0.00001;
   double eulerXVelocity = 0.0, eulerYVelocity = 0.0, eulerZVelocity = 0.0;
-  double publish_period = 0.008;
+  double publish_period = 0.03;
   ros::Rate cmd_rate(1 / publish_period);
   geometry_msgs::TwistStamped twist;
   twist.header.frame_id = "world";
@@ -260,12 +261,14 @@ void RobotController::_path_computation_thread_func(){
 
   Eigen::Vector3d current_linear_velocity,current_linear_acceleration, current_angular_velocity,current_angular_acceleration;
   TrigonometricOTG* trajOTG_pos_ptr;
+  TrigonometricOTG* trajOTG_euler_ptr;
   int idx_pos = 0, idx_euler=0;
   vector<vector<vector<double>>> profile_pos, profile_euler;
   Eigen::Vector3d damp_position, damp_euler;
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
   {
+    //auto start = chrono::high_resolution_clock::now();
     path_thread.lock();
     Eigen::Matrix4d target_matrix = _target_matrix;
     path_thread.unlock();
@@ -279,12 +282,11 @@ void RobotController::_path_computation_thread_func(){
     target_pos = target_matrix.block<3, 1>(0, 3);
 
     //Get the damp position
-    //damp_position = Utilities::SmoothDampVector(Xa, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
+    //damp_position = Utilities::SmoothDampVector(current_pos, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
     //damp_position = Utilities::RuckigCalculation(current_pos, target_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
     //damp_position = Utilities::OTGCalculation(current_pos, target_pos, last_target_pos, profile_pos, idx_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, publish_period);
-    damp_position = Utilities::OTGCalculationS(current_pos, target_pos, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, publish_period);
+    damp_position = Utilities::OTGCalculationS(current_pos, target_pos, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, alpha, publish_period);
     Eigen::Vector3d end_effector_linear_velocity = current_linear_velocity;
-
     //Calculate orientation
     current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
     tf2::Quaternion current_ee_quat(current_ee_pose.orientation.x, current_ee_pose.orientation.y, current_ee_pose.orientation.z, current_ee_pose.orientation.w);
@@ -302,9 +304,8 @@ void RobotController::_path_computation_thread_func(){
     Eigen::Vector3d current_euler(current_x, current_y, current_z);
     Eigen::Vector3d target_euler(target_x, target_y, target_z);
     //damp_euler = Utilities::SmoothDampVector(current_euler, target_euler, current_angular_velocity, smoothTime, max_angular_velocity, publish_period);
-    damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
-
-    //Send velocity commands to moveit servo
+    //damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
+    damp_euler = Utilities::OTGCalculationS(current_euler, target_euler, last_target_euler, trajOTG_euler_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration,max_angular_jerk,alpha, publish_period);
     double x_cur = damp_euler.x();
     double y_cur = damp_euler.y();
     double z_cur = damp_euler.z();
@@ -344,8 +345,16 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.angular.z = 0;//isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
     //printf("linear vel: %f %f %f\n", twist.twist.linear.x,twist.twist.linear.y,twist.twist.linear.z);
     //printf("angular vel: %f %f %f\n", twist.twist.angular.x,twist.twist.angular.y,twist.twist.angular.z);
-
     _twist_stamped_pub.publish(twist);
+/*
+    auto stop = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+    if(duration.count()>15000)
+    {
+      cout << "Time taken by function: "
+               << duration.count() << " microseconds" << endl;
+     }
+     */
     cmd_rate.sleep();
   }
 }
@@ -354,6 +363,7 @@ void RobotController::_joint_computation_thread_func(){
   double smoothTime = 1;
   double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
   double publish_period = 0.008;
+  double alpha = 0.00001;
   ros::Rate cmd_rate(1 / publish_period);
   control_msgs::JointJog joint_deltas;
   joint_deltas.joint_names = _joint_name;
@@ -426,7 +436,7 @@ void RobotController::_joint_computation_thread_func(){
        target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
        //vector<double> damp_euler = Utilities::RuckigCalculation_Jnt(current_robot_joint, target_robot_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
        //vector<double> damp_euler = Utilities::OTGCalculation_Jnt(current_robot_joint, target_robot_joint, last_target_joint, profile_joint, idx_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
-       vector<double> damp_euler = Utilities::OTGCalculation_JntS(current_robot_joint, target_robot_joint, last_target_joint, trajOTG_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
+       vector<double> damp_euler = Utilities::OTGCalculation_JntS(current_robot_joint, target_robot_joint, last_target_joint, trajOTG_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, alpha, publish_period);
 
        joint_deltas.velocities = {current_angular_velocity[0],current_angular_velocity[1],current_angular_velocity[2],current_angular_velocity[3],current_angular_velocity[4],current_angular_velocity[5]};
    }

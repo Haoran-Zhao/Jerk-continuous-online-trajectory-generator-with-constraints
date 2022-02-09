@@ -120,14 +120,14 @@ public:
     static TrigonometricOTG* trajOTG_ptr(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d currentVelocity, Eigen::Vector3d currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime);
 
     static Eigen::Vector3d OTGCalculation(Eigen::Vector3d current_pos, Eigen::Vector3d target_pos, Eigen::Vector3d& last_target_pos, vector<vector<vector<double>>>& profile_pos,int& idx, Eigen::Vector3d& current_linear_velocity, Eigen::Vector3d& current_linear_acceleration, double maxVel, double maxAccel, double maxJerk, double publish_period);
-    static Eigen::Vector3d OTGCalculationS(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d& last_target,TrigonometricOTG*& otg_ptr, Eigen::Vector3d& currentVelocity, Eigen::Vector3d& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double publish_period);
+    static Eigen::Vector3d OTGCalculationS(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d& last_target,TrigonometricOTG*& otg_ptr, Eigen::Vector3d& currentVelocity, Eigen::Vector3d& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double publish_period);
 
 
     static vector<vector<vector<double>>> trajOTG_Jnt(vector<double> current, vector<double> target, vector<double> currentVelocity, vector<double> currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime);
     static TrigonometricOTG* trajOTG_Jnt_ptr(vector<double> current, vector<double> target, vector<double> currentVelocity, vector<double> currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime);
 
     static vector<double> OTGCalculation_Jnt(vector<double> current_pos, vector<double> target_pos, vector<double>& last_target_pos, vector<vector<vector<double>>>& profile_pos,int& idx, vector<double>& current_linear_velocity, vector<double>& current_linear_acceleration, double maxVel, double maxAccel, double maxJerk, double publish_period);
-    static vector<double> OTGCalculation_JntS(vector<double> current_pos, vector<double> target_pos, vector<double>& last_target_pos, TrigonometricOTG*& otg_ptr, vector<double>& current_linear_velocity, vector<double>& current_linear_acceleration, double maxVel, double maxAccel, double maxJerk, double publish_period);
+    static vector<double> OTGCalculation_JntS(vector<double> current_pos, vector<double> target_pos, vector<double>& last_target_pos, TrigonometricOTG*& otg_ptr, vector<double>& current_linear_velocity, vector<double>& current_linear_acceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double publish_period);
 
     static double norm_between_vectors(vector<double> v1, vector<double> v2);
     static double get_angle_betweem_vectors(Eigen::Vector3d a, Eigen::Vector3d b, Eigen::Vector3d n);
