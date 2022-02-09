@@ -23,6 +23,7 @@ public:
     * Destructor
     */
     ~Utilities();
+    int idx_;
 
     static void correct_joint_range(double& current_x, double& current_y, double& current_z, double& target_x, double& target_y, double& target_z);
 
@@ -113,6 +114,8 @@ public:
     static vector<double> RuckigCalculation_Jnt(vector<double> current, vector<double> target, vector<double> &currentVelocity, vector<double> &currentAcceleration, double maxVel, double maxAccel, double maxJerk, double deltaTime);
 
     static vector<vector<vector<double>>> trajOTG(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d currentVelocity, Eigen::Vector3d currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime);
+    static TrigonometricOTG* trajOTG_ptr(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d currentVelocity, Eigen::Vector3d currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime);
+
     static Eigen::Vector3d OTGCalculation(Eigen::Vector3d current_pos, Eigen::Vector3d target_pos, Eigen::Vector3d& last_target_pos, vector<vector<vector<double>>>& profile_pos,int& idx, Eigen::Vector3d& current_linear_velocity, Eigen::Vector3d& current_linear_acceleration, double maxVel, double maxAccel, double maxJerk, double publish_period);
 
 

@@ -3,13 +3,13 @@
 #define eps           0.00000000001
 TrigonometricOTG::TrigonometricOTG() {};
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, double rate) : num_dof_(num_dof), mJ_(vector<double>(num_dof)), mA_(vector<double>(num_dof)), mV_(vector<double>(num_dof)), rate_(rate) { complete_ = false; dur_ = 0; };
+TrigonometricOTG::TrigonometricOTG(int num_dof, double rate) : num_dof_(num_dof), mJ_(vector<double>(num_dof)), mA_(vector<double>(num_dof)), mV_(vector<double>(num_dof)), rate_(rate),trajTimes_(vector<Times>(num_dof_)) { complete_ = false; minT_ = 0; };
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, double rate) :num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), rate_(rate) { complete_ = false; dur_ = 0;};
+TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, double rate) :num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), rate_(rate),trajTimes_(vector<Times>(num_dof_)) { complete_ = false; minT_ = 0;};
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, vector<double> mJ, vector<double> mA, vector<double> mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, vector<double> alpha, double rate) : num_dof_(num_dof), mJ_(mJ), mA_(mA), mV_(mV), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(alpha), rate_(rate) { complete_ = false; dur_ = 0;};
+TrigonometricOTG::TrigonometricOTG(int num_dof, vector<double> mJ, vector<double> mA, vector<double> mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, vector<double> alpha, double rate) : num_dof_(num_dof), mJ_(mJ), mA_(mA), mV_(mV), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(alpha), rate_(rate),trajTimes_(vector<Times>(num_dof_)) { complete_ = false; minT_ = 0;};
 
-TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, double alpha, double rate):num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(vector<double>(num_dof, alpha)), rate_(rate) { complete_ = false; dur_ = 0;};
+TrigonometricOTG::TrigonometricOTG(int num_dof, double mJ, double mA, double mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, double alpha, double rate):num_dof_(num_dof), mJ_(vector<double>(num_dof, mJ)), mA_(vector<double>(num_dof, mA)), mV_(vector<double>(num_dof, mV)), a0_(a0), v0_(v0), p0_(p0), pG_(pG), alpha_(vector<double>(num_dof, alpha)), rate_(rate),trajTimes_(vector<Times>(num_dof_)) { complete_ = false; minT_ = 0;};
 
 
 TrigonometricOTG::~TrigonometricOTG() {};
@@ -599,7 +599,7 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
         double dur2 = t1 + t2 + t1;
         double total = dur1 + 3 * dur2 + t3 + t4;
         double t = 0;
-        while (t <= duration)
+        while (t <= minT_)
         {
             vector<double> temp = profileGenerator(v0,a0,p0,pG,alpha,t1,t2,t3,t4,t11,t22,t33,Jpeak,Apeak,Vpeak,t);
             temp.insert(temp.begin(), t);
@@ -631,7 +631,7 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorT(double v0, double a0, do
             t += rate_;
         }
        /* printf("%f %f", total, t);*/
-        vector<vector<double>> profileZ = trajGeneratorZ(pt, pG, alpha, maxJ, maxA, maxV,t-total, total,duration);
+        vector<vector<double>> profileZ = trajGeneratorZ(pt, pG, alpha, maxJ, maxA, maxV,t-total, total,minT_);
         ans.insert(ans.end(),profileZ.begin(), profileZ.end());
     }
     return ans;
@@ -708,7 +708,7 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorZ(double p0, double pG, do
     }
     //printf("zTraj: %f %f %f %f\n", t1, t2, t3, t4);
     double total = 8 * t1 + 4 * t2 + 2 * t3 + t4;
-    while (t <= duration-pret)
+    while (t <= minT_-pret)
     {
         vector<double> temp = profileGenerator(0, 0, p0, pG, alpha, t1, t2, t3, t4, t1, t2, t3, Jpeak, Apeak, Vpeak,t);
         temp.insert(temp.begin(), t+pret);
@@ -718,25 +718,49 @@ vector<vector<double>> TrigonometricOTG::trajGeneratorZ(double p0, double pG, do
 
     return ans;
 };
+double TrigonometricOTG::minimumTime(){
+  for (int i = 0; i < num_dof_; i++)
+  {
+      double v0 = v0_[i];
+      double a0 = a0_[i];
+      double p0 = p0_[i];
+      double pG = pG_[i];
+      double Jpeak = mJ_[i];
+      double Vpeak = mV_[i];
+      double Apeak = mA_[i];
+      double alpha = alpha_[i];
 
-vector<vector<vector<double>>> TrigonometricOTG::trajGenerator()
-{
-    double dur = 0;
-    for (int i = 0; i < num_dof_; i++)
-    {
-        double v0 = v0_[i];
-        double a0 = a0_[i];
-        double p0 = p0_[i];
-        double pG = pG_[i];
-        double Jpeak = mJ_[i];
-        double Vpeak = mV_[i];
-        double Apeak = mA_[i];
-        double alpha = alpha_[i];
+      vector<double> temp = trajTimeT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
 
-        vector<double> temp = trajTimeT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
-        dur = max(dur, temp.back());
-    }
-    //printf("duration: %f \n", dur);
+      int j =0;
+      for(double dd:temp)
+      {
+        printf("t%d: %f ", j++, dd);
+      }
+      std::cout << '\n';
+
+      if(temp.size()==11)
+      {
+        printf("TypeII\n");
+        trajTimes_[i].twoPiece = vector<double>(temp.begin(),temp.end()-2);
+        trajTimes_[i].brake = true;
+        trajTimes_[i].dist = temp[9];
+
+      }
+      else
+      {
+        printf("TypeI\n");
+        trajTimes_[i].onePiece=vector<double>(temp.begin(),temp.end()-1);
+        trajTimes_[i].brake = false;
+      }
+      minT_ = max(minT_, temp.back());
+  }
+  return minT_;
+};
+
+vector<vector<vector<double>>> TrigonometricOTG::trajGenerator(){
+    minimumTime();
+    printf("duration: %f \n", minT_);
     vector<vector<vector<double>>> ans;
     for (int i = 0; i < num_dof_; i++)
     {
@@ -748,9 +772,67 @@ vector<vector<vector<double>>> TrigonometricOTG::trajGenerator()
         double Vpeak = mV_[i];
         double Apeak = mA_[i];
         double alpha = alpha_[i];
-
-        vector<vector<double>> temp = trajGeneratorT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak, dur);
-        ans.push_back(temp);
+        double t = 0;
+        vector<vector<double>> res;
+        if(!trajTimes_[i].brake)
+        {
+          if (pG - p0 < 0) {
+              Vpeak = -Vpeak;
+              Apeak = -Apeak;
+              Jpeak = -Jpeak;
+          }
+          double t1 = trajTimes_[i].onePiece[0], t2 = trajTimes_[i].onePiece[1], t3 = trajTimes_[i].onePiece[2], t4 = trajTimes_[i].onePiece[3], t11 = trajTimes_[i].onePiece[4], t22 = trajTimes_[i].onePiece[5], t33 = trajTimes_[i].onePiece[6];
+          while (t <= minT_)
+          {
+              vector<double> temp = profileGenerator(v0,a0,p0,pG,alpha,t1,t2,t3,t4,t11,t22,t33,Jpeak,Apeak,Vpeak,t);
+              temp.insert(temp.begin(), t);
+              res.push_back(temp);
+              t += rate_;
+          }
+        }
+        else
+        {
+          double t1b = trajTimes_[i].twoPiece[0];
+          double t2b = trajTimes_[i].twoPiece[1];
+          double t3b = trajTimes_[i].twoPiece[2];
+          double t11b = trajTimes_[i].twoPiece[3];
+          double t22b = trajTimes_[i].twoPiece[4];
+          double dist = trajTimes_[i].dist;
+          double pt = p0 + dist;
+          double dur1 = 2 * t11b + t22b;
+          double dur2 = t1b + t2b + t1b;
+          double total = dur1 + 2 * dur2 + t3b;
+          //printf("brake: %f %f %f %f %f\n", t1b, t2b, t3b, t11b, t22b);
+          while (t < total)
+          {
+              vector<double> temp = profileGeneratorB(v0, a0, p0, pt, alpha, t1b, t2b, t3b, t11b, t22b, Jpeak, Apeak, Vpeak,t);
+              temp.insert(temp.begin(), t);
+              res.push_back(temp);
+              t += rate_;
+          }
+         /* printf("%f %f", total, t);*/
+          vector<vector<double>> profileZ;
+          double t1 = trajTimes_[i].twoPiece[5];
+          double t2 = trajTimes_[i].twoPiece[6];
+          double t3 = trajTimes_[i].twoPiece[7];
+          double t4 = trajTimes_[i].twoPiece[8];
+          double pret = total;
+          t = t-pret;
+          if (pG - pt < 0)
+          {
+              Jpeak = -Jpeak;
+          }
+          total = 8 * t1 + 4 * t2 + 2 * t3 + t4;
+          while (t <= minT_-pret)
+          {
+              vector<double> temp = profileGenerator(0, 0, pt, pG, alpha, t1, t2, t3, t4, t1, t2, t3, Jpeak, Apeak, Vpeak,t);
+              temp.insert(temp.begin(), t+pret);
+              profileZ.push_back(temp);
+              t += rate_;
+          }
+          res.insert(res.end(),profileZ.begin(), profileZ.end());
+        }
+        ans.push_back(res);
     }
 
     return ans;
@@ -828,6 +910,7 @@ vector<double> TrigonometricOTG::trajTimeT(double v0, double a0, double p0, doub
         vector<double> timeZ = trajTimeZ(pt, pG, alpha, maxJ, maxA, maxV);
         total += (8*timeZ[0] + 4*timeZ[1]+ 2*timeZ[2]+timeZ[3]);
         ans.insert(ans.end(), timeZ.begin(), timeZ.end());
+        ans.push_back(dist);
         ans.push_back(total);
     }
     return ans;

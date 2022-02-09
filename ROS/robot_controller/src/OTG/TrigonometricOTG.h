@@ -22,6 +22,14 @@ public:
 	TrigonometricOTG(int num_dof, double mJ, double mA, double mV, vector<double> a0, vector<double> v0, vector<double> p0, vector<double> pG, double alpha, double rate);
 
 	~TrigonometricOTG();
+
+	struct Times{
+		bool brake = false;
+		double dist;
+		vector<double> twoPiece; // t1b,t2b,t3b,t11b,t22b, t1,t2,t3,t4;
+		vector<double> onePiece; // t1,t2,t3,t4,t11,t22,t33;
+	};
+
 	double typeI(double v0, double a0, double p0, double pG, double alpha, double t1, double t2 ,double t3, double t11, double t22, double t33, double Jpeak, double Apeak, double Vpeak);
 	vector<double> typeII(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t11, double t22, double Jpeak, double Apeak, double Vpeak);
 	vector<double> typeIII(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
@@ -39,13 +47,13 @@ public:
 	vector<vector<double>> trajGeneratorT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double duration);
 	vector<vector<double>> trajGeneratorZ(double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double t, double pret, double duration);
 	vector<vector<vector<double>>> trajGenerator();
-
+	double minimumTime();
 	vector<double> trajTimeB(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
 	vector<double> trajTimeT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
 	vector<double> trajTimeZ(double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
 
 	int num_dof_; // degree of freedom
-	double dur_; //minimal time
+	double minT_; //minimal time
 	bool complete_;
 	vector<double> alpha_; // time ratio
 	vector<double> mJ_; //max jerk
@@ -56,5 +64,5 @@ public:
 	vector<double> p0_; //initial position
 	vector<double> pG_; //target position
 	double rate_; // control loop rate (time interval)
-
+	vector<Times> trajTimes_;
 };

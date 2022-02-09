@@ -291,6 +291,17 @@ vector<vector<vector<double>>> Utilities::trajOTG(Eigen::Vector3d current, Eigen
   return profile;
 }
 
+TrigonometricOTG* Utilities::trajOTG_ptr(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d currentVelocity, Eigen::Vector3d currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime){
+  int num_dof = 3;
+  vector<double> current_accel = {currentAcceleration(0), currentAcceleration(1),currentAcceleration(2)};
+  vector<double> current_vel = {currentVelocity(0),currentVelocity(1),currentVelocity(2)};
+  vector<double> current_pos = {current(0),current(1),current(2)};
+  vector<double> target_pos = {target(0), target(1), target(2)};
+  TrigonometricOTG* trajectoryOTG = new TrigonometricOTG(num_dof, maxJerk, maxAccel, maxVel, current_accel, current_vel, current_pos, target_pos, alpha, deltaTime);
+
+  return trajectoryOTG;
+}
+
 Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d& last_target, vector<vector<vector<double>>>& profile, int& idx, Eigen::Vector3d& currentVelocity, Eigen::Vector3d& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double publish_period)
 {
   Eigen::Vector3d damp_position;
@@ -299,22 +310,21 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
     if((current-target).norm()<=0.000001 || idx>=profile[0].size()||profile.empty())
     {
       //printf("target size: %d\n", target.size());
-      //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
+      printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
       currentVelocity = {0.0,0.0,0.0};
       currentAcceleration = {0.0,0.0,0.0};
       damp_position = current;
       idx = 0;
       profile.clear();
-      printf("....");
     }
     else
     {
-      //printf("moveing...%d %d %d %d\n", profile[0].size(), profile[1].size(), profile[2].size(), idx);
-      //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+      printf("moveing...%d %d %d %d\n", profile[0].size(), profile[1].size(), profile[2].size(), idx);
+      printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
       vector<double> profile_x = profile[0][idx];
       vector<double> profile_y = profile[1][idx];
       vector<double> profile_z = profile[2][idx];
-      //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+      printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
       currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
       currentAcceleration = {profile_x[2], profile_y[2], profile_z[2]};
       if (idx+1 < profile[0].size())
@@ -336,12 +346,11 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
     vector<double> profile_x = profile[0][idx];
     vector<double> profile_y = profile[1][idx];
     vector<double> profile_z = profile[2][idx];
-    //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
     currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
     currentAcceleration = {profile_x[2],profile_y[2],profile_z[2]};
     damp_position = {profile[0][idx+1][4],profile[1][idx+1][4],profile[2][idx+1][4]};
-    //printf("start...\n");
-    //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+    printf("start...\n");
+    printf("target: %f %f %f, compute: %f %f %f\n", target(0), target(1),target(2), profile[0].back()[4], profile[1].back()[4],profile[2].back()[4]);
     idx+=1;
   }
 
