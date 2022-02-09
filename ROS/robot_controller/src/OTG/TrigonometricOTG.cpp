@@ -732,16 +732,9 @@ double TrigonometricOTG::minimumTime(){
 
       vector<double> temp = trajTimeT(v0, a0, p0, pG, alpha, Jpeak, Apeak, Vpeak);
 
-      int j =0;
-      for(double dd:temp)
-      {
-        printf("t%d: %f ", j++, dd);
-      }
-      std::cout << '\n';
-
       if(temp.size()==11)
       {
-        printf("TypeII\n");
+        //printf("TypeII\n");
         trajTimes_[i].twoPiece = vector<double>(temp.begin(),temp.end()-2);
         trajTimes_[i].brake = true;
         trajTimes_[i].dist = temp[9];
@@ -749,7 +742,7 @@ double TrigonometricOTG::minimumTime(){
       }
       else
       {
-        printf("TypeI\n");
+        //printf("TypeI\n");
         trajTimes_[i].onePiece=vector<double>(temp.begin(),temp.end()-1);
         trajTimes_[i].brake = false;
       }
@@ -760,7 +753,7 @@ double TrigonometricOTG::minimumTime(){
 
 vector<vector<vector<double>>> TrigonometricOTG::trajGenerator(){
     minimumTime();
-    printf("duration: %f \n", minT_);
+    //printf("duration: %f \n", minT_);
     vector<vector<vector<double>>> ans;
     for (int i = 0; i < num_dof_; i++)
     {

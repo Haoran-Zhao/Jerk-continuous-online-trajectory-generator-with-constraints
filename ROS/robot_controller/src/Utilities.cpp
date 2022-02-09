@@ -310,7 +310,7 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
     if((current-target).norm()<=0.000001 || idx>=profile[0].size()||profile.empty())
     {
       //printf("target size: %d\n", target.size());
-      printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
+      //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
       currentVelocity = {0.0,0.0,0.0};
       currentAcceleration = {0.0,0.0,0.0};
       damp_position = current;
@@ -319,12 +319,12 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
     }
     else
     {
-      printf("moveing...%d %d %d %d\n", profile[0].size(), profile[1].size(), profile[2].size(), idx);
-      printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+      //printf("moveing...%d %d %d %d\n", profile[0].size(), profile[1].size(), profile[2].size(), idx);
+      //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
       vector<double> profile_x = profile[0][idx];
       vector<double> profile_y = profile[1][idx];
       vector<double> profile_z = profile[2][idx];
-      printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+      //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
       currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
       currentAcceleration = {profile_x[2], profile_y[2], profile_z[2]};
       if (idx+1 < profile[0].size())
@@ -349,8 +349,8 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
     currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
     currentAcceleration = {profile_x[2],profile_y[2],profile_z[2]};
     damp_position = {profile[0][idx+1][4],profile[1][idx+1][4],profile[2][idx+1][4]};
-    printf("start...\n");
-    printf("target: %f %f %f, compute: %f %f %f\n", target(0), target(1),target(2), profile[0].back()[4], profile[1].back()[4],profile[2].back()[4]);
+    //printf("start...\n");
+    //printf("target: %f %f %f, compute: %f %f %f\n", target(0), target(1),target(2), profile[0].back()[4], profile[1].back()[4],profile[2].back()[4]);
     idx+=1;
   }
 

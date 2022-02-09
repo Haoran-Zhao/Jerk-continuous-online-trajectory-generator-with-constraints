@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=true;
+    _Cartesian_compute=false;
 }
 
 RobotController::~RobotController() {
