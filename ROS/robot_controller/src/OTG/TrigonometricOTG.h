@@ -47,6 +47,7 @@ public:
 	vector<vector<double>> trajGeneratorT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double duration);
 	vector<vector<double>> trajGeneratorZ(double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double t, double pret, double duration);
 	vector<vector<vector<double>>> trajGenerator();
+	vector<vector<double>> trajGeneratorS();
 	double minimumTime();
 	vector<double> trajTimeB(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
 	vector<double> trajTimeT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
@@ -65,4 +66,5 @@ public:
 	vector<double> pG_; //target position
 	double rate_; // control loop rate (time interval)
 	vector<Times> trajTimes_;
+	int idx_;
 };

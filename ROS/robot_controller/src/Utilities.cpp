@@ -298,7 +298,7 @@ TrigonometricOTG* Utilities::trajOTG_ptr(Eigen::Vector3d current, Eigen::Vector3
   vector<double> current_pos = {current(0),current(1),current(2)};
   vector<double> target_pos = {target(0), target(1), target(2)};
   TrigonometricOTG* trajectoryOTG = new TrigonometricOTG(num_dof, maxJerk, maxAccel, maxVel, current_accel, current_vel, current_pos, target_pos, alpha, deltaTime);
-
+  printf("trajOTG_ptr\n");
   return trajectoryOTG;
 }
 
@@ -307,7 +307,7 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
   Eigen::Vector3d damp_position;
   if((last_target-target).norm()<=0.000001)
   {
-    if((current-target).norm()<=0.000001 || idx>=profile[0].size()||profile.empty())
+    if((current-target).norm()<=0.000001 || profile.empty() || idx >= profile[0].size())
     {
       //printf("target size: %d\n", target.size());
       //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
@@ -357,6 +357,71 @@ Eigen::Vector3d Utilities::OTGCalculation(Eigen::Vector3d current, Eigen::Vector
   return damp_position;
 }
 
+Eigen::Vector3d Utilities::OTGCalculationS(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d& last_target,TrigonometricOTG*& otg_ptr, Eigen::Vector3d& currentVelocity, Eigen::Vector3d& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double publish_period)
+{
+  //printf("OTGCalculationS\n");
+  Eigen::Vector3d damp_position;
+  if((last_target-target).norm()<=0.000001)
+  {
+    int n;
+    if(otg_ptr)
+    {
+      n= ceil(otg_ptr->minT_/otg_ptr->rate_);
+    }
+    //printf("COMPUTED SIZE\n");
+
+    if((current-target).norm()<=0.000001 ||otg_ptr==nullptr || otg_ptr->idx_ >= n)
+    {
+      //printf("target size: %d\n", target.size());
+      //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
+      currentVelocity = {0.0,0.0,0.0};
+      currentAcceleration = {0.0,0.0,0.0};
+      damp_position = current;
+      otg_ptr=nullptr;
+    }
+    else
+    {
+      //printf("CASE2\n");
+      vector<vector<double>> profile = otg_ptr->trajGeneratorS();
+      printf("moveing...%f %d\n", ceil(otg_ptr->minT_/otg_ptr->rate_), otg_ptr->idx_);
+      //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+      vector<double> profile_x = profile[0];
+      vector<double> profile_y = profile[1];
+      vector<double> profile_z = profile[2];
+      currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
+      currentAcceleration = {profile_x[2],profile_y[2],profile_z[2]};
+      damp_position = {profile_x[4],profile_y[4],profile_z[4]};
+      printf("current: %f %f %f, expect: %f %f %f, target: %f %f %f\n", current(0), current(1),current(2), profile_x[4], profile_y[4],profile_z[4], target(0),target(1),target(2));
+
+      //printf("start...\n");
+      otg_ptr->idx_+=1;
+      //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+    }
+  }
+  else
+  {
+    //printf("CASE1\n");
+    last_target = target;
+    otg_ptr=nullptr;
+    otg_ptr = Utilities::trajOTG_ptr(current, target, currentVelocity, currentAcceleration, maxVel,maxAccel, maxJerk, 0.01, publish_period);
+    otg_ptr->minimumTime();
+    printf("minT: %f, idx: %d\n", otg_ptr->minT_, otg_ptr->idx_);
+    vector<vector<double>> profile = otg_ptr->trajGeneratorS();
+    vector<double> profile_x = profile[0];
+    vector<double> profile_y = profile[1];
+    vector<double> profile_z = profile[2];
+    currentVelocity = {profile_x[3], profile_y[3], profile_z[3]};
+    currentAcceleration = {profile_x[2],profile_y[2],profile_z[2]};
+    damp_position = {profile_x[4],profile_y[4],profile_z[4]};
+    //printf("start...\n");
+    //printf("target: %f %f %f, compute: %f %f %f\n", target(0), target(1),target(2), profile[0].back()[4], profile[1].back()[4],profile[2].back()[4]);
+    otg_ptr->idx_+=1;
+  }
+
+  return damp_position;
+}
+
+
 vector<vector<vector<double>>> Utilities::trajOTG_Jnt(vector<double> current, vector<double> target, vector<double> currentVelocity, vector<double> currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime){
   int num_dof = 6;
   TrigonometricOTG trajectoryOTG(num_dof, maxJerk, maxAccel, maxVel, currentAcceleration, currentVelocity, current, target, alpha, deltaTime);
@@ -365,12 +430,19 @@ vector<vector<vector<double>>> Utilities::trajOTG_Jnt(vector<double> current, ve
   return profile;
 }
 
+TrigonometricOTG* Utilities::trajOTG_Jnt_ptr(vector<double> current, vector<double> target, vector<double> currentVelocity, vector<double> currentAcceleration, double maxVel, double maxAccel, double maxJerk, double alpha, double deltaTime) {
+    int num_dof = 6;
+    TrigonometricOTG* trajectoryOTG = new TrigonometricOTG(num_dof, maxJerk, maxAccel, maxVel, currentAcceleration, currentVelocity, current, target, alpha, deltaTime);
+
+    return trajectoryOTG;
+}
+
 vector<double> Utilities::OTGCalculation_Jnt(vector<double> current, vector<double> target, vector<double>& last_target, vector<vector<vector<double>>>& profile, int& idx, vector<double>& currentVelocity, vector<double>& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double publish_period)
 {
   vector<double> damp_position;
   if(norm_between_vectors(last_target,target)<=0.000001)
   {
-    if(norm_between_vectors(current,target)<=0.000001 || idx>=profile[0].size()||profile.empty())
+    if(norm_between_vectors(current,target)<=0.000001 || profile.empty() || idx >= profile[0].size())
     {
       //printf("target size: %d\n", target.size());
       //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
@@ -411,6 +483,72 @@ vector<double> Utilities::OTGCalculation_Jnt(vector<double> current, vector<doub
 
   return damp_position;
 }
+
+vector<double> Utilities::OTGCalculation_JntS(vector<double> current, vector<double> target, vector<double>& last_target, TrigonometricOTG*& otg_ptr, vector<double>& currentVelocity, vector<double>& currentAcceleration, double maxVel, double maxAccel, double maxJerk, double publish_period)
+{
+    //printf("OTGCalculationS\n");
+    vector<double> damp_position;
+    if (norm_between_vectors(last_target, target) <= 0.000001)
+    {
+        int n;
+        if (otg_ptr) { n = ceil(otg_ptr->minT_ / otg_ptr->rate_); }
+        //printf("COMPUTED SIZE\n");
+
+        if (norm_between_vectors(current, target) <= 0.000001 || otg_ptr == nullptr || otg_ptr->idx_ >= n)
+        {
+            //printf("target size: %d\n", target.size());
+            //printf("target: %f %f %f, current: %f %f %f\n", target(0), target(1),target(2), current(0), current(1),current(2));
+            currentVelocity = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+            currentAcceleration = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+            damp_position = current;
+            otg_ptr = nullptr;
+        }
+        else
+        {
+            //printf("CASE2\n");
+            vector<vector<double>> profile = otg_ptr->trajGeneratorS();
+            //printf("moveing...%f %d\n", ceil(otg_ptr->minT_/otg_ptr->rate_), otg_ptr->idx_);
+            //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+            vector<double> profile_1 = profile[0];
+            vector<double> profile_2 = profile[1];
+            vector<double> profile_3 = profile[2];
+            vector<double> profile_4 = profile[0];
+            vector<double> profile_5 = profile[1];
+            vector<double> profile_6 = profile[2];
+            currentVelocity = { profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3] };
+            currentAcceleration = { profile_1[2],profile_2[2],profile_3[2],profile_4[2], profile_5[2], profile_6[2] };
+            damp_position = { profile_1[4],profile_2[4],profile_3[4],profile_4[4], profile_5[4], profile_6[4] };
+            //printf("start...\n");
+            otg_ptr->idx_ += 1;
+            //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+        }
+    }
+    else
+    {
+        //printf("CASE1\n");
+        last_target = target;
+        otg_ptr = nullptr;
+        //printf("creating new ptr\n");
+        otg_ptr = Utilities::trajOTG_Jnt_ptr(current, target, currentVelocity, currentAcceleration, maxVel, maxAccel, maxJerk, 0.01, publish_period);
+        //printf("created new ptr\n");
+        otg_ptr->minimumTime();
+        vector<vector<double>> profile = otg_ptr->trajGeneratorS();
+        vector<double> profile_1 = profile[0];
+        vector<double> profile_2 = profile[1];
+        vector<double> profile_3 = profile[2];
+        vector<double> profile_4 = profile[0];
+        vector<double> profile_5 = profile[1];
+        vector<double> profile_6 = profile[2];
+        currentVelocity = { profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3] };
+        currentAcceleration = { profile_1[2],profile_2[2],profile_3[2],profile_4[2], profile_5[2], profile_6[2] };
+        damp_position = { profile_1[4],profile_2[4],profile_3[4],profile_4[4], profile_5[4], profile_6[4] };
+        //printf("start...\n");
+        otg_ptr->idx_ += 1;
+    }
+
+    return damp_position;
+}
+
 
 Eigen::Vector3d Utilities::SmoothDampVector(Eigen::Vector3d current, Eigen::Vector3d target, Eigen::Vector3d &currentVelocity, double smoothTime,
                                  double maxSpeed, double deltaTime)
