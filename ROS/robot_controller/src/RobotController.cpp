@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=true;
+    _Cartesian_compute=false;
 }
 
 RobotController::~RobotController() {
@@ -193,7 +193,7 @@ void RobotController::_kdl_initialize()
       ROS_INFO("Num of joints in the chain: %u", _my_chain.getNrOfJoints());
   }
   _joint_state = KDL::JntArrayVel(numJoint);
-  _joint_name = {"shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"};
+  _joint_name = {"shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint","wrist_1_joint", "wrist_2_joint", "wrist_3_joint"};
 }
 
 void RobotController::_Joint_state_cb(const sensor_msgs::JointStateConstPtr& msg)
@@ -361,7 +361,7 @@ void RobotController::_path_computation_thread_func(){
 
 void RobotController::_joint_computation_thread_func(){
   double smoothTime = 1;
-  double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
+  double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 10;
   double publish_period = 0.008;
   double alpha = 0.00001;
   ros::Rate cmd_rate(1 / publish_period);
@@ -384,6 +384,7 @@ void RobotController::_joint_computation_thread_func(){
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
   {
+    //auto start = chrono::high_resolution_clock::now();
     path_thread.lock();
     Eigen::Matrix4d target_matrix = _target_matrix;
     path_thread.unlock();
@@ -406,10 +407,10 @@ void RobotController::_joint_computation_thread_func(){
     q_init(3) = current_robot_joint[3];
     q_init(4) = current_robot_joint[4];
     q_init(5) = current_robot_joint[5];
-
+    //printf("joint 0 %f, joint 1 %f, joint 2 %f\n",q_init(0), q_init(1), q_init(2) );
     //Compute current tcp position
-    KDL::Frame tcp_pos_start;
-    _fk_solver->JntToCart(q_init, tcp_pos_start);
+    //KDL::Frame tcp_pos_start;
+    //_fk_solver->JntToCart(q_init, tcp_pos_start);
 /*    ROS_INFO("Position read: %f %f %f", current_pos(0), current_pos(1), current_pos(2));
     ROS_INFO("Current tcp Position/Twist KDL:");
     ROS_INFO("Position: %f %f %f", tcp_pos_start.p(0), tcp_pos_start.p(1), tcp_pos_start.p(2));
@@ -442,6 +443,15 @@ void RobotController::_joint_computation_thread_func(){
    }
    joint_deltas.header.stamp = ros::Time::now();
    _twist_stamped_joint_pub.publish(joint_deltas);
+/*
+   auto stop = chrono::high_resolution_clock::now();
+   auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+   if(duration.count()>15000)
+   {
+     cout << "Time taken by function: "
+              << duration.count() << " microseconds" << endl;
+    }
+*/
    cmd_rate.sleep();
   }
 }

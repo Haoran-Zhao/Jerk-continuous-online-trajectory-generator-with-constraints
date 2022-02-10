@@ -406,6 +406,7 @@ Eigen::Vector3d Utilities::OTGCalculationS(Eigen::Vector3d current, Eigen::Vecto
     otg_ptr=nullptr;
     otg_ptr = Utilities::trajOTG_ptr(current, target, currentVelocity, currentAcceleration, maxVel,maxAccel, maxJerk, alpha, publish_period);
     otg_ptr->minimumTime();
+    otg_ptr->idx_+=1;
     //printf("minT: %f, idx: %d\n", otg_ptr->minT_, otg_ptr->idx_);
     vector<vector<double>> profile = otg_ptr->trajGeneratorS();
     vector<double> profile_x = profile[0];
@@ -510,21 +511,21 @@ vector<double> Utilities::OTGCalculation_JntS(vector<double> current, vector<dou
             //printf("CASE2\n");
             vector<vector<double>> profile = otg_ptr->trajGeneratorS();
             //printf("moveing...%f %d\n", ceil(otg_ptr->minT_/otg_ptr->rate_), otg_ptr->idx_);
-            //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][idx][4], profile[1][idx][4],profile[2][idx][4]);
+            //printf("current: %f %f %f, expect: %f %f %f\n", current(0), current(1),current(2), profile[0][4], profile[1][4],profile[2][4]);
             vector<double> profile_1 = profile[0];
             vector<double> profile_2 = profile[1];
             vector<double> profile_3 = profile[2];
-            vector<double> profile_4 = profile[0];
-            vector<double> profile_5 = profile[1];
-            vector<double> profile_6 = profile[2];
+            vector<double> profile_4 = profile[3];
+            vector<double> profile_5 = profile[4];
+            vector<double> profile_6 = profile[5];
             currentVelocity = { profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3] };
             currentAcceleration = { profile_1[2],profile_2[2],profile_3[2],profile_4[2], profile_5[2], profile_6[2] };
             damp_position = { profile_1[4],profile_2[4],profile_3[4],profile_4[4], profile_5[4], profile_6[4] };
-            printf("current: %f %f %f, expect: %f %f %f, target: %f %f %f\n", current[0], current[1],current[2], profile_1[4], profile_2[4],profile_3[4], target[0],target[1],target[2]);
+            //printf("current: %f %f %f %f %f %f, expect: %f %f %f %f %f %f, target: %f %f %f %f %f %f\n", current[0], current[1],current[2],current[3], current[4],current[5], profile_1[4], profile_2[4],profile_3[4],profile_4[4], profile_5[4],profile_6[4], target[0],target[1],target[2], target[3],target[4],target[5]);
 
             //printf("start...\n");
             otg_ptr->idx_ += 1;
-            //printf("vel: %f %f %f\n", profile_x[3], profile_y[3], profile_z[3]);
+            //printf("vel: %f %f %f %f %f %f\n", profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3]);
         }
     }
     else
@@ -536,16 +537,21 @@ vector<double> Utilities::OTGCalculation_JntS(vector<double> current, vector<dou
         otg_ptr = Utilities::trajOTG_Jnt_ptr(current, target, currentVelocity, currentAcceleration, maxVel, maxAccel, maxJerk, alpha, publish_period);
         //printf("created new ptr\n");
         otg_ptr->minimumTime();
+        otg_ptr->idx_+=1;
+        //printf("minimumTime: %f\n", otg_ptr->minT_);
         vector<vector<double>> profile = otg_ptr->trajGeneratorS();
         vector<double> profile_1 = profile[0];
         vector<double> profile_2 = profile[1];
         vector<double> profile_3 = profile[2];
-        vector<double> profile_4 = profile[0];
-        vector<double> profile_5 = profile[1];
-        vector<double> profile_6 = profile[2];
+        vector<double> profile_4 = profile[3];
+        vector<double> profile_5 = profile[4];
+        vector<double> profile_6 = profile[5];
         currentVelocity = { profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3] };
         currentAcceleration = { profile_1[2],profile_2[2],profile_3[2],profile_4[2], profile_5[2], profile_6[2] };
         damp_position = { profile_1[4],profile_2[4],profile_3[4],profile_4[4], profile_5[4], profile_6[4] };
+        //printf("current: %f %f %f %f %f %f, expect: %f %f %f %f %f %f, target: %f %f %f %f %f %f\n", current[0], current[1],current[2],current[3], current[4],current[5], profile_1[4], profile_2[4],profile_3[4],profile_4[4], profile_5[4],profile_6[4], target[0],target[1],target[2], target[3],target[4],target[5]);
+        //printf("vel: %f %f %f %f %f %f\n", profile_1[3], profile_2[3], profile_3[3],profile_4[3], profile_5[3], profile_6[3]);
+
         //printf("start...\n");
         otg_ptr->idx_ += 1;
     }
