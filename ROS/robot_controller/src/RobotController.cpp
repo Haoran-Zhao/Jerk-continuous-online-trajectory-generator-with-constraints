@@ -178,7 +178,11 @@ void RobotController::_kdl_initialize()
   }
   // std::cout << robot_desc_string << '\n';
   my_tree.getChain("base_link", "tool0", _my_chain);
-
+  unsigned int nj = _my_chain.getNrOfJoints();
+  for(unsigned int i=0; i<nj; i++)
+	{
+		ROS_INFO("joint_name[%d]: %s", i, _my_chain.getSegment(i).getJoint().getName().c_str());
+	}
   unsigned int numJoint = _my_chain.getNrOfJoints();
   _fk_solver = new KDL::ChainFkSolverPos_recursive(_my_chain);
   _ik_solver_pinv = new KDL::ChainIkSolverVel_pinv(_my_chain, 0.0001, 1000);
@@ -361,7 +365,7 @@ void RobotController::_path_computation_thread_func(){
 
 void RobotController::_joint_computation_thread_func(){
   double smoothTime = 1;
-  double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 10;
+  double max_angular_velocity = 1, max_angular_acceleration = 1, max_angular_jerk = 10;
   double publish_period = 0.008;
   double alpha = 0.00001;
   ros::Rate cmd_rate(1 / publish_period);
