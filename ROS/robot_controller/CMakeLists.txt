@@ -8,6 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   moveit_ros_planning_interface
   tf2
+  tf
+  kdl_conversions
+  tf_conversions
   actionlib_msgs
   sensor_msgs
 )

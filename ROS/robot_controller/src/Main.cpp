@@ -180,16 +180,16 @@ void automatedInput(RobotController *robotController)
     double time = 10.0;
     double translation_step = 0.04 ;
     double rotation_step = 0.0174533 * 5; //5 degrees
-    int repeat = 1;
-    double x[12] =    {1, -1, 0,  0, 0,  0, 0,  0, 0,  0, 0,  0};
-    double y[12] =    {0,  0, 1, -1, 0,  0, 0,  0, 0,  0, 0,  0};
-    double z[12] =    {0,  0, 0,  0, 1, -1, 0,  0, 0,  0, 0,  0};
-    double xRot[12] = {0,  0, 0,  0, 0,  0, 1, -1, 0,  0, 0,  0};
-    double yRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 1, -1, 0,  0};
-    double zRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 1, -1};
+    int repeat = 6;
+    double x[12] =    {1.5, 0, 0, -1.5, 0,  0, 0,  0, 0,  0, 0,  0};
+    double y[12] =    {0,  1.5, 0, 0, -1.5,  0, 0,  0, 0,  0, 0,  0};
+    double z[12] =    {0,  0, 1.5, 0, 0, -1.5, 0,  0, 0,  0, 0,  0};
+    double xRot[12] = {0,  0, 0,  0, 0,  0, 1.5, -1.5, 0,  0, 0,  0};
+    double yRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 1.5, -1.5, 0,  0};
+    double zRot[12] = {0,  0, 0,  0, 0,  0, 0,  0, 0,  0, 1.5, -1.5};
 
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(40000));
     geometry_msgs::Pose delta_pose;
     delta_pose.position.x = delta_pose.position.y = delta_pose.position.z = 0.0;
     delta_pose.orientation.x = delta_pose.orientation.y = delta_pose.orientation.z = delta_pose.orientation.w = 0.0;
@@ -206,10 +206,10 @@ void automatedInput(RobotController *robotController)
     robotController->set_delta_pose(delta_pose);
 
     std::cout << "Staring" << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(20000));
-    for (int i = 0; i < 5; i++)
-    {
-        std::cout << "Counter = " << i << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+//    for (int i = 0; i < 5; i++)
+//    {
+//        std::cout << "Counter = " << i << std::endl;
         for (int j = 0; j < repeat; j++)
         {
             geometry_msgs::Pose delta_pose;
@@ -217,23 +217,24 @@ void automatedInput(RobotController *robotController)
             delta_pose.orientation.x = delta_pose.orientation.y = delta_pose.orientation.z = delta_pose.orientation.w = 0.0;
 
             tf::Quaternion quat;
-            delta_pose.position.x = translation_step * x[i];
-            delta_pose.position.y = translation_step * y[i];
-            delta_pose.position.z = translation_step * z[i];
+            delta_pose.position.x = translation_step * x[j];
+            delta_pose.position.y = translation_step * y[j];
+            delta_pose.position.z = translation_step * z[j];
 
-            quat.setEulerZYX(rotation_step * zRot[i], rotation_step * yRot[i], rotation_step * xRot[i]);
+            quat.setEulerZYX(rotation_step * zRot[j], rotation_step * yRot[j], rotation_step * xRot[j]);
             delta_pose.orientation.x = quat.x();
             delta_pose.orientation.y = quat.y();
             delta_pose.orientation.z = quat.z();
             delta_pose.orientation.w = quat.w();
 
             robotController->set_delta_pose(delta_pose);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1400));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2500));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-    }
+//        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+//    }
     std::cout << "Collection Ended." << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    robotController->writeJointStatesToFile();
 }
 
 
@@ -248,7 +249,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    bool automated_input = false;
+    bool automated_input = true;
     if (automated_input)
     {
         automatedInput(robotController);

@@ -94,7 +94,7 @@ bool RobotController::initialize(int argc, char **argv) {
           //Initialize kdl solver
           _kdl_initialize();
           _twist_stamped_joint_pub = _node_handle->advertise<control_msgs::JointJog>("/servo_server/delta_joint_cmds", 1 , true);
-          //_joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::_Joint_state_cb, this);
+          //_joint_state_sub = _node_handle->subscribe("/joint_states", 1, &RobotController::jointCallback, this);
           _joint_computation_thread = std::thread(&RobotController::_joint_computation_thread_func, this);
         }
     }
@@ -122,9 +122,16 @@ void RobotController::jointCallback(const sensor_msgs::JointState& state){
 
 void RobotController::writeJointStatesToFile(){
     std::ofstream outFile;
-    outFile.open("joint_data.csv");
-//outFile << joint_stream.rdbuf();
-    // std::cout << joint_stream.str() << std::endl;
+    if(_Cartesian_compute)
+    {
+      outFile.open("cart_data.csv");
+    }
+    else
+    {
+      outFile.open("joint_data.csv");
+    }
+    outFile << joint_stream.rdbuf();
+    std::cout << joint_stream.str() << std::endl;
 }
 
 
@@ -284,7 +291,9 @@ void RobotController::_path_computation_thread_func(){
     current_pos = current_end_effector_matrix.block<3,1>(0,3);
     //Set target_pos as the target position
     target_pos = target_matrix.block<3, 1>(0, 3);
-
+    joint_stream << target_pos(0) << ","<< target_pos(1) << ","<< target_pos(2) << ","<< current_pos(0) << ","<< current_pos(1) << ","<< current_pos(2) << ",";
+    joint_stream.seekp(-1, std::ios_base::end);
+    joint_stream << "\n";
     //Get the damp position
     //damp_position = Utilities::SmoothDampVector(current_pos, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
     //damp_position = Utilities::RuckigCalculation(current_pos, target_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
@@ -366,7 +375,7 @@ void RobotController::_path_computation_thread_func(){
 void RobotController::_joint_computation_thread_func(){
   double smoothTime = 1;
   double max_angular_velocity = 1, max_angular_acceleration = 1, max_angular_jerk = 10;
-  double publish_period = 0.008;
+  double publish_period = 0.03;
   double alpha = 0.00001;
   ros::Rate cmd_rate(1 / publish_period);
   control_msgs::JointJog joint_deltas;
@@ -439,9 +448,12 @@ void RobotController::_joint_computation_thread_func(){
        std::cout << std::endl;
        */
        target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
+       joint_stream << target_robot_joint[0] << ","<< target_robot_joint[1] << ","<< target_robot_joint[2] << ","<< target_robot_joint[3] << ","<< target_robot_joint[4] << ","<< target_robot_joint[5] << ","<< current_robot_joint[0] << ","<< current_robot_joint[1] << ","<< current_robot_joint[2] << ","<< current_robot_joint[3] << ","<< current_robot_joint[4] << ","<< current_robot_joint[5] << ",";
+       joint_stream.seekp(-1, std::ios_base::end);
+       joint_stream << "\n";
        //vector<double> damp_euler = Utilities::RuckigCalculation_Jnt(current_robot_joint, target_robot_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
        //vector<double> damp_euler = Utilities::OTGCalculation_Jnt(current_robot_joint, target_robot_joint, last_target_joint, profile_joint, idx_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
-       vector<double> damp_euler = Utilities::OTGCalculation_JntS(current_robot_joint, target_robot_joint, last_target_joint, trajOTG_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, alpha, publish_period);
+       vector<double> damp_euler = Utilities::OTGCalculation_JntS(current_robot_joint, target_robot_joint, last_target_joint, trajOTG_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, alpha, 0.012);
 
        joint_deltas.velocities = {current_angular_velocity[0],current_angular_velocity[1],current_angular_velocity[2],current_angular_velocity[3],current_angular_velocity[4],current_angular_velocity[5]};
    }
