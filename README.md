@@ -1,1 +1,1 @@
-# Jerk-continous-online-trajectory-generator-with-constrains
+# Jerk-continuous-online-trajectory-generator-with-constraints
