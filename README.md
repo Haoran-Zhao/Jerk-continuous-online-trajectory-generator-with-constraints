@@ -6,7 +6,7 @@ By analyzing the critical constraints and conditions, the corresponding closed-f
 trajectory profiles are derived. The proposed algorithm was first derived in Mathematica and then converted into
 a C++ implementation. Finally, the algorithm was utilized and demonstrated in ROS & Gazebo using a UR3 robot.
 
-The C++ trajectory planner code cab be located at " ./src/Jerk-continuous-online-trajectory-generator-with-constraints/ROS/"
+The C++ trajectory planner code cab be accessed at " ./src/Jerk-continuous-online-trajectory-generator-with-constraints/ROS/robot_controller/src/OTG/"
 
 ## Quick start
 . Open a ROS terminal, cd to ros_workspace
