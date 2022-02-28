@@ -78,12 +78,8 @@ add_executable(robot_controller
         src/RobotController.h
         src/PathComputation.cpp
         src/PathComputation.h
-        src/OTG/poly34.cpp
-        src/OTG/poly34.h
         src/OTG/profileSegments.cpp
         src/OTG/profileSegments.h
-        src/OTG/profileSegmentsB.cpp
-        src/OTG/profileSegmentsB.h
         src/OTG/TrigonometricOTG.cpp
         src/OTG/TrigonometricOTG.h)
 

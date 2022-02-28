@@ -14,7 +14,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=false;
+    _Cartesian_compute=true;
 }
 
 RobotController::~RobotController() {
@@ -291,14 +291,15 @@ void RobotController::_path_computation_thread_func(){
     current_pos = current_end_effector_matrix.block<3,1>(0,3);
     //Set target_pos as the target position
     target_pos = target_matrix.block<3, 1>(0, 3);
-    joint_stream << target_pos(0) << ","<< target_pos(1) << ","<< target_pos(2) << ","<< current_pos(0) << ","<< current_pos(1) << ","<< current_pos(2) << ",";
-    joint_stream.seekp(-1, std::ios_base::end);
-    joint_stream << "\n";
     //Get the damp position
     //damp_position = Utilities::SmoothDampVector(current_pos, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
     //damp_position = Utilities::RuckigCalculation(current_pos, target_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
     //damp_position = Utilities::OTGCalculation(current_pos, target_pos, last_target_pos, profile_pos, idx_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, publish_period);
     damp_position = Utilities::OTGCalculationS(current_pos, target_pos, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, alpha, publish_period);
+    joint_stream << target_pos(0) << ","<< target_pos(1) << ","<< target_pos(2) << ","<< damp_position(0) << ","<< damp_position(1) << ","<< damp_position(2) <<","<< current_pos(0) << ","<< current_pos(1) << ","<< current_pos(2) << ",";
+    joint_stream.seekp(-1, std::ios_base::end);
+    joint_stream << "\n";
+
     Eigen::Vector3d end_effector_linear_velocity = current_linear_velocity;
     //Calculate orientation
     current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
@@ -448,13 +449,12 @@ void RobotController::_joint_computation_thread_func(){
        std::cout << std::endl;
        */
        target_robot_joint = {q_out(0),q_out(1),q_out(2),q_out(3),q_out(4),q_out(5)};
-       joint_stream << target_robot_joint[0] << ","<< target_robot_joint[1] << ","<< target_robot_joint[2] << ","<< target_robot_joint[3] << ","<< target_robot_joint[4] << ","<< target_robot_joint[5] << ","<< current_robot_joint[0] << ","<< current_robot_joint[1] << ","<< current_robot_joint[2] << ","<< current_robot_joint[3] << ","<< current_robot_joint[4] << ","<< current_robot_joint[5] << ",";
-       joint_stream.seekp(-1, std::ios_base::end);
-       joint_stream << "\n";
        //vector<double> damp_euler = Utilities::RuckigCalculation_Jnt(current_robot_joint, target_robot_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
        //vector<double> damp_euler = Utilities::OTGCalculation_Jnt(current_robot_joint, target_robot_joint, last_target_joint, profile_joint, idx_joint, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
        vector<double> damp_euler = Utilities::OTGCalculation_JntS(current_robot_joint, target_robot_joint, last_target_joint, trajOTG_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, alpha, 0.012);
-
+       joint_stream << target_robot_joint[0] << ","<< target_robot_joint[1] << ","<< target_robot_joint[2] << ","<< target_robot_joint[3] << ","<< target_robot_joint[4] << ","<< target_robot_joint[5] << ","<<damp_euler[0] << ","<< damp_euler[1] << ","<< damp_euler[2] << ","<< damp_euler[3] << ","<< damp_euler[4] << ","<< damp_euler[5] << ","<< current_robot_joint[0] << ","<< current_robot_joint[1] << ","<< current_robot_joint[2] << ","<< current_robot_joint[3] << ","<< current_robot_joint[4] << ","<< current_robot_joint[5] << ",";
+       joint_stream.seekp(-1, std::ios_base::end);
+       joint_stream << "\n";
        joint_deltas.velocities = {current_angular_velocity[0],current_angular_velocity[1],current_angular_velocity[2],current_angular_velocity[3],current_angular_velocity[4],current_angular_velocity[5]};
    }
    joint_deltas.header.stamp = ros::Time::now();

@@ -234,7 +234,7 @@ void automatedInput(RobotController *robotController)
 //    }
     std::cout << "Collection Ended." << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    robotController->writeJointStatesToFile();
+    //robotController->writeJointStatesToFile();
 }
 
 

@@ -12,13 +12,14 @@ using namespace std;
 class profileSeg
 {
 public:
-	double t1_,t2_,t3_,t4_,t11_,t22_,t33_;
-	double Jpeak_, Apeak_, Vpeak_;
+	double t1_,t2_,t11_,t22_,t33_;
+	double mJ_, mA_, mV_;
 	double alpha_;
 	double v0_, a0_;
-	double p0_, pG_;
-	vector<double> pre1_,pre2_,pre3_,pre4_,pre5_,pre6_,pre7_,pre8_,pre9_,pre10_,pre11_,pre12_,pre13_,pre14_,pre15_;
-	profileSeg(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t3, double t4, double t11, double t22, double t33, double maxJ, double maxA, double maxV);
+	double p0_;
+	double sa_;
+	vector<double> pre1_,pre2_,pre3_,pre4_,pre5_,pre6_,pre7_;
+	profileSeg(double v0, double a0, double p0, double alpha, double t11, double t22, double t33, double t1, double t2, double sa, double maxJ, double maxA, double maxV);
 	~profileSeg();
 	vector<double> Seg1(double t);
 	vector<double> Seg2( double t);
@@ -28,14 +29,6 @@ public:
 	vector<double> Seg6( double t);
 	vector<double> Seg7( double t);
 	vector<double> Seg8( double t);
-	vector<double> Seg9( double t);
-	vector<double> Seg10( double t);
-	vector<double> Seg11( double t);
-	vector<double> Seg12( double t);
-	vector<double> Seg13( double t);
-	vector<double> Seg14( double t);
-	vector<double> Seg15( double t);
-	vector<double> Seg16(double t);
 private:
-	double mA_, mV_;
+	double Jpeak_,Apeak_, Vpeak_;
 };

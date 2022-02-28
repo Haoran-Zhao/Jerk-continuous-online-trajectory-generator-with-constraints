@@ -8,8 +8,7 @@
 #include <complex>
 #include <numeric>
 #include<profileSegments.h>
-#include<profileSegmentsB.h>
-#include<poly34.h>
+#include <unsupported/Eigen/Polynomials>
 
 using namespace std;
 
@@ -26,33 +25,43 @@ public:
 	struct Times{
 		bool brake = false;
 		double dist;
-		vector<double> twoPiece; // t1b,t2b,t3b,t11b,t22b, t1,t2,t3,t4;
-		vector<double> onePiece; // t1,t2,t3,t4,t11,t22,t33;
+		double s;
+		double sa;
+		double sv;
+		vector<double> twoPiece; // t11,t22,t33,t1,t2,ta1,ta2,ta3,tb1,tb2,t4,tc1,tc2,tc3;
+		vector<double> onePiece; // ta1,ta2,ta3,tb1,tb2,t4,tc1,tc2,tc3;
 	};
 
-	double typeI(double v0, double a0, double p0, double pG, double alpha, double t1, double t2 ,double t3, double t11, double t22, double t33, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeII(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t11, double t22, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeIII(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeIV(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeV(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeVI(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeVII(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> typeVIII(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> brakeCalculate(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
+	vector<vector<double>> typeI(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeIII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeIV(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeV(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeVI(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeVII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<vector<double>> typeVIII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+
+	vector<vector<double>> computeTypeI(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeIII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeIV(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeV(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeVI(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeVII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+	vector<vector<double>> computeTypeVIII(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double sa, double sv);
+
 	vector<double> isValid(vector<double> candidate);
-	vector<double> filterResults(vector<vector<double>>& candidates, double v0, double a0, double p0, double pG, double Jpeak, double Apeak, double Vpeak);
-	vector<double> profileGenerator(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t3, double t4, double t11, double t22, double t33, double Jpeak, double Apeak, double Vpeak,double t);
-	vector<double> profileGeneratorB(double v0, double a0, double p0, double pG, double alpha, double t1, double t2, double t3, double t11, double t22, double Jpeak, double Apeak, double Vpeak,double t);
-	vector<vector<double>> trajGeneratorB(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<vector<double>> trajGeneratorT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double duration);
-	vector<vector<double>> trajGeneratorZ(double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak, double t, double pret, double duration);
+	vector<double> filterResults(vector<vector<double>>& candidates, double a0, double v0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
+	vector<double> profileGeneratorH(double a0, double v0, double p0, double alpha, double mJ, double mA, double mV, double t11, double t22, double t33, double t1, double t2, double sa, double t);
+	vector<vector<double>> trajGeneratorT(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV, double duration);
 	vector<vector<vector<double>>> trajGenerator();
 	vector<vector<double>> trajGeneratorS();
 	double minimumTime();
-	vector<double> trajTimeB(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> trajTimeT(double v0, double a0, double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-	vector<double> trajTimeZ(double p0, double pG, double alpha, double Jpeak, double Apeak, double Vpeak);
-
+	vector<double> trajTimeT(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<double> trajTimeN(double a0, double v0, double p0, double pG, double alpha, double mJ, double mA, double mV);
+	vector<double> trajTimeT1(double a0, double v0, double p0, double pG, double alpha, double maxJ, double maxA, double maxV);
+	vector<double> trajTimeCall1(double a0, double v0, double p0, double vf, double alpha, double mJ, double mA, double mV,double s);
+	vector<double> trajTimeCall2(double a0, double v0, double p0, double alpha, double mJ, double mA, double mV);
 	int num_dof_; // degree of freedom
 	double minT_; //minimal time
 	bool complete_;
