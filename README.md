@@ -94,32 +94,6 @@ https://moveit.ros.org/install/
 . Create ROS  commandline terminal shortcut as in step 2
 . Install Win10SDK_10.0.18362 from visual studio
 
-### Robot Controller source download and compilation
-
-. Download and install git
-. Create a new folder, name it say ros_workspace
-. Inside ros_workspace, create a folder named src
-. Switch to folder src
-. Clone git repository from “https://gitlab.com/hmcx/headtracka.git” or using command :
-```
-$ git clone git@gitlab.com:hmcx/headtracka.git
-```
-. Open Ros terminal
-. Go to go to ros_workspace\src folder and execute the command
-```
-$ catkin_init_workspace
-```
-. To compile, go to ros_workspace folder  and execute the command
-```
-$ catkin_make
-```
-### Running binaries
-
-. Open a ROS terminal, cd to ros_workspace
-. To run execute following command
-```
-$ src\Jerk-continuous-online-trajectory-generator-with-constraints\ROS\script\start_simulation_ur3.bat
-```
 ### Source download and compilation
 
 . Clone git repository from “https://github.com/Haoran-Zhao/Jerk-continuous-online-trajectory-generator-with-constraints.git” or using command :
