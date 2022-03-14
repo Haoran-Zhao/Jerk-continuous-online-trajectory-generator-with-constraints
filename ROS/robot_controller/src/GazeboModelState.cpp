@@ -1,15 +1,10 @@
-// Copyright (c) 2020 SURGE, All rights reserved. 
+// Copyright (c) 2020 SURGE, All rights reserved.
 /**
  * @file       GazeboModelState.cpp
  * @class      GazeboModelState
  * @brief      Responsible for controlling state of the gazebo model
  */
 /*=============================================================================
- * Change history:
- * ----------------------------------------------------------------------------
- * Revision DATE            BY           		SPR/US        REMARKS
- * 1.0      24-May-2020    	J.Padhan/Nihal 		NA 		   	  Initial Version
- * 2.0      30-Oct-2020    	Nihal 			    NA 		   	  Code restructuring and documentation
  ==================================================================================*/
 
 #include "GazeboModelState.h"
@@ -77,7 +72,7 @@ void GazeboModelState::set_model_position(std::string model_name, geometry_msgs:
     //Call client to set the model state
     if (_set_model_state_client.call(srv)) {
         //cout << "Setting model state success!!" << endl;
-    } 
+    }
      else{
         std::cout << "ERROR " << std::endl;
     }
@@ -108,7 +103,7 @@ void GazeboModelState::set_model_position_world(std::string model_name, geometry
     //Call client to set the model state
     if (_set_model_state_client.call(srv)) {
         //cout << "Setting model state success!!" << srv.response.status_message << std::endl;
-    } 
+    }
      else{
         std::cout << "ERROR " << std::endl;
     }
@@ -133,12 +128,12 @@ geometry_msgs::Pose GazeboModelState::get_model_position(std::string model_name)
     srv.request.relative_entity_name = model_name;
 
     //Call client to set the model state
-    // std::cout << "Calling Service: " << _get_model_state_client.isValid() << " , " << _get_model_state_client.isPersistent() 
+    // std::cout << "Calling Service: " << _get_model_state_client.isValid() << " , " << _get_model_state_client.isPersistent()
     //             << " , " << _get_model_state_client.exists()  << std::endl;
     if (_get_model_state_client.call(srv)) {
         //Set the pose
         pose = srv.response.pose;
-    } 
+    }
     else{
         std::cout << "ERROR " << std::endl;
     }
@@ -168,7 +163,7 @@ geometry_msgs::Pose GazeboModelState::get_model_position_world(std::string model
     if (_get_model_state_client.call(srv)) {
         //Set the pose
         pose = srv.response.pose;
-    } 
+    }
     return pose;
 }
 
@@ -196,7 +191,7 @@ void GazeboModelState::create_frame(std::string name, geometry_msgs::Pose pose) 
     //Read the file
     str_stream << ifs.rdbuf();
 
-    //Set the model xml 
+    //Set the model xml
     srv.request.model_xml = str_stream.str();
 
     //Set the model name
@@ -211,7 +206,7 @@ void GazeboModelState::create_frame(std::string name, geometry_msgs::Pose pose) 
     //Call the service
     if (_spawn_model_client.call(srv)) {
         // cout << "Spawnig model state success!! " << srv.response.status_message << ","<< srv.response.success << endl;
-    } 
+    }
      else{
         std::cout << "ERROR " << std::endl;
     }

@@ -1,7 +1,3 @@
-//
-// Created by hmc on 11/18/20.
-//
-
 #include <robot_controller/RotationAngle.h>
 #include <moveit_msgs/RobotTrajectory.h>
 #include <std_msgs/Float64.h>
@@ -14,7 +10,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=true;
+    _Cartesian_compute=false;
 }
 
 RobotController::~RobotController() {

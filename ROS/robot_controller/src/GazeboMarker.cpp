@@ -1,15 +1,10 @@
-// Copyright (c) 2020 SURGE, All rights reserved. 
+// Copyright (c) 2020 SURGE, All rights reserved.
 /**
  * @file       GazeboMarker.cpp
  * @class      GazeboMarker
  * @brief      Responsible for darwing markers in gazebo.
  */
 /*=============================================================================
- * Change history:
- * ----------------------------------------------------------------------------
- * Revision DATE            BY           		SPR/US        REMARKS
- * 1.0      19-May-2020    	J.Padhan/Nihal 		NA 		   	  Initial Version
- * 2.0      30-Oct-2020    	Nihal 			    NA 		   	  Code restructuring and documentation
 ==================================================================================*/
 
 #include "GazeboMarker.h"
@@ -22,7 +17,7 @@ GazeboMarker::GazeboMarker()
 {
 	_marker_msg.set_ns("default");
 	_mat_msg = _marker_msg.mutable_material();
-	
+
 }
 
 /*
@@ -73,7 +68,7 @@ void GazeboMarker::draw_sphere_marker(geometry_msgs::Pose pose)
 	ignition::msgs::Set(_marker_msg.mutable_pose(),
                     ignition::math::Pose3d(pose.position.x,pose.position.y,pose.position.z,pose.orientation.x,pose.orientation.y,pose.orientation.z));
 
-	//Send request to create the marker in gazebo environment				
+	//Send request to create the marker in gazebo environment
 	_node.Request("/marker", _marker_msg);
 }
 
@@ -87,7 +82,7 @@ void GazeboMarker::draw_line_marker(geometry_msgs::Pose start_pose, geometry_msg
 	//Check is clear flag is true, if rue clear all the markers
 	if(clear)
 	    _marker_msg.clear_point();
-	
+
 	//Sets the id the marker
 	_marker_msg.set_id(MessageID::LINE);
 
@@ -104,7 +99,7 @@ void GazeboMarker::draw_line_marker(geometry_msgs::Pose start_pose, geometry_msg
 	ignition::msgs::Set(_marker_msg.add_point(),ignition::math::Vector3d(start_pose.position.x,start_pose.position.y,start_pose.position.z));
 	ignition::msgs::Set(_marker_msg.add_point(),ignition::math::Vector3d(end_pose.position.x,end_pose.position.y,end_pose.position.z));
 
-	//Send request to create the marker in gazebo environment				
+	//Send request to create the marker in gazebo environment
 	_node.Request("/marker", _marker_msg);
 }
 

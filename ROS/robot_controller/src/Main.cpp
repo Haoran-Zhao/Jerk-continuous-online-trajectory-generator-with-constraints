@@ -249,7 +249,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    bool automated_input = true;
+    bool automated_input = false;
     if (automated_input)
     {
         automatedInput(robotController);

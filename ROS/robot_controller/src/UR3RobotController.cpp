@@ -5,14 +5,6 @@
  * @brief      Responsible for controlling robot.
  */
 /*=============================================================================
- * Change history:
- * ----------------------------------------------------------------------------
- * Revision DATE            BY           		SPR/US        REMARKS
- * 1.0      10-May-2020    	J.Padhan/Nihal 		NA 		   	  Initial Version
- * 2.0      24-May-2020     Nihal				NA			  Fixed orientation.
- * 3.0      24-May-2020     J.Padhan            NA            Added Marker.
- * 4.0      24-Oct-2020     J.Padhan            NA            Made path replacement configurable
- * 5.0      30-Oct-2020     Nihal               NA            Restructed the code
 ==================================================================================*/
 
 #include "UR3RobotController.h"
