@@ -10,7 +10,7 @@ RobotController::RobotController() {
     _async_spinner = NULL;
     _marker_enabled = false;
     _model_state_enabled = true;
-    _Cartesian_compute=false;
+    _Cartesian_compute=true;
 }
 
 RobotController::~RobotController() {
@@ -39,7 +39,7 @@ bool RobotController::initialize(int argc, char **argv) {
         _node_handle = new ros::NodeHandle("~");
 
         //Create and start AsyncSpinner
-        _async_spinner = new ros::AsyncSpinner(1);
+        _async_spinner = new ros::AsyncSpinner(2);
         if (NULL != _async_spinner)
             _async_spinner->start();
         else
@@ -70,7 +70,7 @@ bool RobotController::initialize(int argc, char **argv) {
 
         //Initialize the various gazebo models
         _initialize_gazebo_models();
-
+        _rviz_marker.initialize(_node_handle, _move_group_ptr);
         //Initialize the compute path object
         _compute_path->initialize(_node_handle, &_model_state, Utilities::pose_to_matrix(_move_group_ptr->getCurrentPose().pose));
 
@@ -163,6 +163,7 @@ void RobotController::_initialize_gazebo_models() {
     tf2::Quaternion cylinder_quat(cylinder_pose.orientation.x, cylinder_pose.orientation.y, cylinder_pose.orientation.z, cylinder_pose.orientation.w);
 
     _model_state.set_model_position_world("targetCylinder", cylinder_pose);
+    _rviz_marker._update_target_position(cylinder_pose);
 }
 
 
@@ -281,7 +282,6 @@ void RobotController::_path_computation_thread_func(){
     path_thread.unlock();
     current_robot_pose = _move_group_ptr->getCurrentPose().pose;
     _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
-
     //Get the current end effector matrix
     current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
     current_pos = current_end_effector_matrix.block<3,1>(0,3);
@@ -491,8 +491,10 @@ void RobotController::set_delta_pose(geometry_msgs::Pose delta_pose) {
 */
 void RobotController::_update_cylinder() {
     //Gets the current position of the model
-    geometry_msgs::Pose current_pose = _model_state.get_model_position("targetCylinder");
-
+    geometry_msgs::Pose current_pose;// = _model_state.get_model_position("targetCylinder");
+    current_pose.orientation.w = 1;
+    //printf("position:%f %f %f\n", current_pose.position.x,current_pose.position.y,current_pose.position.z);
+    //printf("orientation:%f %f %f %f\n", current_pose.orientation.x,current_pose.orientation.y,current_pose.orientation.z, current_pose.orientation.w);
     //Update the current position
     current_pose.position.x += _delta_pose.position.x;
     current_pose.position.y += _delta_pose.position.y;
@@ -523,9 +525,19 @@ void RobotController::_update_cylinder() {
 
     //Update the model position in gazebo
     _model_state.set_model_position("targetCylinder", current_pose);
-
     //Set the target matrix
-    geometry_msgs::Pose target_pose = _model_state.get_model_position_world("targetCylinder");
+    //geometry_msgs::Pose target_pose = _model_state.get_model_position_world("targetCylinder");
+
+    Eigen::Matrix4d temp_matrix = Utilities::pose_to_matrix(_rviz_marker._target_pose);
+    Eigen::Matrix4d temp_matrix1 = Utilities::pose_to_matrix(current_pose);
+    Eigen::Matrix4d new_matrix = temp_matrix*temp_matrix1;
+    geometry_msgs::Pose target_pose = Utilities::matrix_to_pose(new_matrix);
+
+    _rviz_marker._update_target_position(target_pose);
+
+
+    printf("gazebo:%f %f %f\n", target_pose.position.x,target_pose.position.y,target_pose.position.z);
+    printf("rviz:%f %f %f\n", _rviz_marker._target_pose.position.x,_rviz_marker._target_pose.position.y,_rviz_marker._target_pose.position.z);
     path_thread.lock();
     _target_matrix = Utilities::pose_to_matrix(target_pose);
     path_thread.unlock();

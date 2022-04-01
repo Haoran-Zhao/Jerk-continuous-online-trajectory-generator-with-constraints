@@ -43,25 +43,37 @@ public:
     * @param raduis radius of the sphere
     * @param alpha opacity of the sphere
     */
-    void publish_sphere(geometry_msgs::Pose pose, double r, double g, double b, double radius, double alpha);
+    void publish_sphere(geometry_msgs::Pose pose);
 
     /**
     * Continuesly publishes the current robot end effector position
     */
     void _publish_end_effector_position();
+    /**
+    * Publishes cylinder marker to the topic
+    * @param pose Pose of the cylinder
+    */
+    void publish_cylinder(geometry_msgs::Pose pose);
+    void _update_target_position(geometry_msgs::Pose pose);
+    void Callback(const visualization_msgs::MarkerArray& state);
 
+    geometry_msgs::Pose _target_pose;
 private:
 
     /**
 	 * Ros publisher to publish the messaging to the topic
 	 */
     ros::Publisher _vis_pub;
-    
+    ros::Publisher _vis_pub1;
+    ros::Subscriber _vis_sub1;
     /**
 	 * Stores the marker id
 	 */
-    int _marker_id;
-    
+    int _sphere_id;
+    /**
+   * Stores the marker id
+   */
+    int _cylinder_id;
     /**
 	 * Stores the end effector marker id
 	 */

@@ -64,6 +64,8 @@ add_executable(robot_controller
 				src/Main.cpp
 				src/GazeboMarker.cpp
 				src/GazeboMarker.h
+        src/RvizMarker.cpp
+				src/RvizMarker.h
 				src/GazeboModelState.cpp
         src/GazeboModelState.h
 				src/UR3PathComputation.cpp

@@ -23,6 +23,8 @@
 #include "control_msgs/JointJog.h"
 #include <cmath>
 #include<TrigonometricOTG.h>
+#include "RvizMarker.h"
+
 
 class RobotController {
 public:
@@ -130,6 +132,11 @@ protected:
     * GazeboMarker object to create markers for rendering in gazebo environment
     */
     GazeboMarker _marker;
+
+    /**
+    * RvizMarker object to create markers for rendering in rviz environment
+    */
+    RvizMarker _rviz_marker;
 
     /**
     * Set to true to enable markers, false otherwise
