@@ -30,7 +30,7 @@
     safety_k_position:=20
     kinematics_file">
 
-    <xacro:property name="__kinematics" value="${kinematics_file['kinematics']}"/>
+    <xacro:property name="_kinematics" value="${kinematics_file['kinematics']}"/>
 
     <!-- Inertia parameters -->
     <xacro:property name="base_mass" value="2.0" />  <!-- This mass might be incorrect -->
@@ -84,7 +84,7 @@
     <joint name="${prefix}shoulder_pan_joint" type="revolute">
       <parent link="${prefix}base_link" />
       <child link = "${prefix}shoulder_link" />
-      <origin xyz="${__kinematics['shoulder']['x']} ${__kinematics['shoulder']['y']} ${__kinematics['shoulder']['z']}" rpy="${__kinematics['shoulder']['roll']} ${__kinematics['shoulder']['pitch']} ${__kinematics['shoulder']['yaw'] + base_correction}" />
+      <origin xyz="${_kinematics['shoulder']['x']} ${_kinematics['shoulder']['y']} ${_kinematics['shoulder']['z']}" rpy="${_kinematics['shoulder']['roll']} ${_kinematics['shoulder']['pitch']} ${_kinematics['shoulder']['yaw'] + base_correction}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="330.0" velocity="2.16"/>
@@ -125,7 +125,7 @@
     <joint name="${prefix}shoulder_lift_joint" type="revolute">
       <parent link="${prefix}shoulder_link" />
       <child link = "${prefix}upper_arm_link" />
-      <origin xyz="${__kinematics['upper_arm']['x']} ${__kinematics['upper_arm']['y']} ${__kinematics['upper_arm']['z']}" rpy="${__kinematics['upper_arm']['roll']} ${__kinematics['upper_arm']['pitch']} ${__kinematics['upper_arm']['yaw']}" />
+      <origin xyz="${_kinematics['upper_arm']['x']} ${_kinematics['upper_arm']['y']} ${_kinematics['upper_arm']['z']}" rpy="${_kinematics['upper_arm']['roll']} ${_kinematics['upper_arm']['pitch']} ${_kinematics['upper_arm']['yaw']}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="330.0" velocity="2.16"/>
@@ -158,15 +158,15 @@
           <mesh filename="package://ur_description/meshes/ur3/collision/upperarm.stl"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial radius="0.075" length="${-1*__kinematics['forearm']['x']}" mass="${upper_arm_mass}">
-        <origin xyz="${0.5*__kinematics['forearm']['x']} 0.0 ${upper_arm_inertia_offset}" rpy="0 ${pi/2} 0" />
+      <xacro:cylinder_inertial radius="0.075" length="${-1*_kinematics['forearm']['x']}" mass="${upper_arm_mass}">
+        <origin xyz="${0.5*_kinematics['forearm']['x']} 0.0 ${upper_arm_inertia_offset}" rpy="0 ${pi/2} 0" />
       </xacro:cylinder_inertial>
     </link>
 
     <joint name="${prefix}elbow_joint" type="revolute">
       <parent link="${prefix}upper_arm_link" />
       <child link = "${prefix}forearm_link" />
-      <origin xyz="${__kinematics['forearm']['x']} ${__kinematics['forearm']['y']} ${__kinematics['forearm']['z']}" rpy="${__kinematics['forearm']['roll']} ${__kinematics['forearm']['pitch']} ${__kinematics['forearm']['yaw']}" />
+      <origin xyz="${_kinematics['forearm']['x']} ${_kinematics['forearm']['y']} ${_kinematics['forearm']['z']}" rpy="${_kinematics['forearm']['roll']} ${_kinematics['forearm']['pitch']} ${_kinematics['forearm']['yaw']}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-pi}" upper="${pi}" effort="150.0" velocity="3.15"/>
@@ -199,15 +199,15 @@
           <mesh filename="package://ur_description/meshes/ur3/collision/forearm.stl"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial radius="0.075" length="${-1*__kinematics['wrist_1']['x']}" mass="${forearm_mass}">
-        <origin xyz="${0.5*__kinematics['forearm']['x']} 0.0 ${elbow_offset}" rpy="0 ${pi/2} 0" />
+      <xacro:cylinder_inertial radius="0.075" length="${-1*_kinematics['wrist_1']['x']}" mass="${forearm_mass}">
+        <origin xyz="${0.5*_kinematics['forearm']['x']} 0.0 ${elbow_offset}" rpy="0 ${pi/2} 0" />
       </xacro:cylinder_inertial>
     </link>
 
     <joint name="${prefix}wrist_1_joint" type="revolute">
       <parent link="${prefix}forearm_link" />
       <child link = "${prefix}wrist_1_link" />
-      <origin xyz="${__kinematics['wrist_1']['x']} ${__kinematics['wrist_1']['y']} ${__kinematics['wrist_1']['z']}" rpy="${__kinematics['wrist_1']['roll']} ${__kinematics['wrist_1']['pitch']} ${__kinematics['wrist_1']['yaw']}" />
+      <origin xyz="${_kinematics['wrist_1']['x']} ${_kinematics['wrist_1']['y']} ${_kinematics['wrist_1']['z']}" rpy="${_kinematics['wrist_1']['roll']} ${_kinematics['wrist_1']['pitch']} ${_kinematics['wrist_1']['yaw']}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="3.2"/>
@@ -240,7 +240,7 @@
           <mesh filename="package://ur_description/meshes/ur3/collision/wrist1.stl"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial radius="0.075" length="${-1*__kinematics['wrist_2']['y']}" mass="${wrist_1_mass}">
+      <xacro:cylinder_inertial radius="0.075" length="${-1*_kinematics['wrist_2']['y']}" mass="${wrist_1_mass}">
         <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
       </xacro:cylinder_inertial>
     </link>
@@ -248,7 +248,7 @@
     <joint name="${prefix}wrist_2_joint" type="revolute">
       <parent link="${prefix}wrist_1_link" />
       <child link = "${prefix}wrist_2_link" />
-      <origin xyz="${__kinematics['wrist_2']['x']} ${__kinematics['wrist_2']['y']} ${__kinematics['wrist_2']['z']}" rpy="${__kinematics['wrist_2']['roll']} ${__kinematics['wrist_2']['pitch']} ${__kinematics['wrist_2']['yaw']}" />
+      <origin xyz="${_kinematics['wrist_2']['x']} ${_kinematics['wrist_2']['y']} ${_kinematics['wrist_2']['z']}" rpy="${_kinematics['wrist_2']['roll']} ${_kinematics['wrist_2']['pitch']} ${_kinematics['wrist_2']['yaw']}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="3.2"/>
@@ -281,7 +281,7 @@
           <mesh filename="package://ur_description/meshes/ur3/collision/wrist2.stl"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial radius="0.075" length="${__kinematics['wrist_3']['y']}" mass="${wrist_2_mass}">
+      <xacro:cylinder_inertial radius="0.075" length="${_kinematics['wrist_3']['y']}" mass="${wrist_2_mass}">
         <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
       </xacro:cylinder_inertial>
     </link>
@@ -289,7 +289,7 @@
     <joint name="${prefix}wrist_3_joint" type="revolute">
       <parent link="${prefix}wrist_2_link" />
       <child link = "${prefix}wrist_3_link" />
-      <origin xyz="${__kinematics['wrist_3']['x']} ${__kinematics['wrist_3']['y']} ${__kinematics['wrist_3']['z']}" rpy="${__kinematics['wrist_3']['roll']} ${__kinematics['wrist_3']['pitch']} ${__kinematics['wrist_3']['yaw']}" />
+      <origin xyz="${_kinematics['wrist_3']['x']} ${_kinematics['wrist_3']['y']} ${_kinematics['wrist_3']['z']}" rpy="${_kinematics['wrist_3']['roll']} ${_kinematics['wrist_3']['pitch']} ${_kinematics['wrist_3']['yaw']}" />
       <axis xyz="0 0 1" />
       <xacro:unless value="${joint_limited}">
         <limit lower="${-2.0 * pi}" upper="${2.0 * pi}" effort="54.0" velocity="3.2"/>
