@@ -156,14 +156,30 @@ void RobotController::_initialize_gazebo_models() {
 
     //Set the end effector sphere to robot pose
     _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
+    //Set the RCM sphere pose
+    Eigen::Matrix4d rcm_matrix = Utilities::pose_to_matrix(current_robot_pose);
+    rcm_matrix.block<3, 1>(0, 3) = rcm_matrix.block<3, 1>(0, 3) + ((_scope_length/2 + 0.045) * rcm_matrix.block<3, 1>(0, 2));
+    geometry_msgs::Pose rcm_pose = Utilities::matrix_to_pose(rcm_matrix);
+    _model_state.set_model_position_world("RCMSphere", rcm_pose);
+    incision_matrix = rcm_matrix;
 
     //Set the ScopeCylinder sphere
-    geometry_msgs::Pose cylinder_pose = current_robot_pose;
+    Eigen::Matrix4d cylinder_matrix = Utilities::pose_to_matrix(current_robot_pose);
+    cylinder_matrix.block<3, 1>(0, 3) = cylinder_matrix.block<3, 1>(0, 3) + ((_scope_length) * cylinder_matrix.block<3, 1>(0, 2));
+    geometry_msgs::Pose cylinder_pose = Utilities::matrix_to_pose(cylinder_matrix);
 
     tf2::Quaternion cylinder_quat(cylinder_pose.orientation.x, cylinder_pose.orientation.y, cylinder_pose.orientation.z, cylinder_pose.orientation.w);
+    double current_rot_X, current_rot_Y, current_rot_Z;
+    tf2::Matrix3x3(cylinder_quat).getRPY(current_rot_X, current_rot_Y, current_rot_Z);
+    cylinder_quat.setEulerZYX(current_rot_Z, current_rot_Y, current_rot_X - _cylinder_angle);
+    cylinder_pose.orientation.x = cylinder_quat.x();
+    cylinder_pose.orientation.y = cylinder_quat.y();
+    cylinder_pose.orientation.z = cylinder_quat.z();
+    cylinder_pose.orientation.w = cylinder_quat.w();
 
     _model_state.set_model_position_world("targetCylinder", cylinder_pose);
     _rviz_marker._update_target_position(cylinder_pose);
+    _rviz_marker._rcm_pose = rcm_pose;
 }
 
 
@@ -241,7 +257,32 @@ void RobotController::_robot_movement_thread_func() {
     }
 }
 
+Eigen::Matrix4d getScopeTip(Eigen::Matrix4d end_effector_matrix, double angulation_radian)
+{
+  //Create the transformation matrix
+  Eigen::Matrix4d transformation_to_scope_tip;
+  transformation_to_scope_tip.setIdentity();
+  transformation_to_scope_tip(2, 3) = 0.37;
+  end_effector_matrix.block<3, 1>(0, 3) = end_effector_matrix.block<3, 1>(0, 3) + 0.37 * end_effector_matrix.block<3, 1>(0, 2);
+
+  //Rotate end tip
+  geometry_msgs::Pose end_pose = Utilities::matrix_to_pose(end_effector_matrix);
+  tf2::Quaternion tip_quat(end_pose.orientation.x, end_pose.orientation.y, end_pose.orientation.z, end_pose.orientation.w);
+  double current_rot_X, current_rot_Y, current_rot_Z;
+  tf2::Matrix3x3(tip_quat).getRPY(current_rot_X, current_rot_Y, current_rot_Z);
+  tip_quat.setEulerZYX(current_rot_Z, current_rot_Y, current_rot_X - angulation_radian);
+  end_pose.orientation.x = tip_quat.x();
+  end_pose.orientation.y = tip_quat.y();
+  end_pose.orientation.z = tip_quat.z();
+  end_pose.orientation.w = tip_quat.w();
+
+  end_effector_matrix = Utilities::pose_to_matrix(end_pose);
+
+  return end_effector_matrix;
+}
+
 void RobotController::_path_computation_thread_func(){
+  double angulation_angle = 0.523599;
   double smoothTime = 1;
   double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 10;
   double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
@@ -254,12 +295,13 @@ void RobotController::_path_computation_thread_func(){
 
   geometry_msgs::Pose current_robot_pose = _move_group_ptr->getCurrentPose().pose;
   Eigen::Matrix4d current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
-  Eigen::Vector3d last_target_pos;
+  Eigen::Matrix4d current_scope_tip_matrix = getScopeTip(current_end_effector_matrix, angulation_angle);
   _target_matrix = Utilities::pose_to_matrix(_model_state.get_model_position_world("targetCylinder"));
 
-  Eigen::Vector3d target_pos; //target postion
-  Eigen::Vector3d current_pos = current_end_effector_matrix.block<3, 1>(0, 3);
-  last_target_pos = current_pos;
+  Eigen::Vector3d Xe = current_end_effector_matrix.block<3, 1>(0, 3);
+  Eigen::Vector3d Xa = current_scope_tip_matrix.block<3, 1>(0, 3);
+  Eigen::Vector3d Xb, Xc = incision_matrix.block<3, 1>(0, 3);
+  Eigen::Vector3d last_target_pos = Xa;
 
   geometry_msgs::Pose current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
   tf2::Quaternion current_quat(current_ee_pose.orientation.x, current_ee_pose.orientation.y, current_ee_pose.orientation.z, current_ee_pose.orientation.w);
@@ -276,39 +318,46 @@ void RobotController::_path_computation_thread_func(){
   std::this_thread::sleep_for(std::chrono::milliseconds(5000));
   while (ros::ok())
   {
-    //auto start = chrono::high_resolution_clock::now();
+    ///std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     path_thread.lock();
-    Eigen::Matrix4d target_matrix = _target_matrix;
+    Eigen::Matrix4d target_scope_tip_matrix = _target_matrix;
     path_thread.unlock();
-    current_robot_pose = _move_group_ptr->getCurrentPose().pose;
-    _model_state.set_model_position_world("EndEffectorSphere", current_robot_pose);
+
     //Get the current end effector matrix
-    current_end_effector_matrix = Utilities::pose_to_matrix(current_robot_pose);
-    current_pos = current_end_effector_matrix.block<3,1>(0,3);
-    //Set target_pos as the target position
-    target_pos = target_matrix.block<3, 1>(0, 3);
+    current_end_effector_matrix = Utilities::pose_to_matrix(_move_group_ptr->getCurrentPose().pose);
+
+    //Get the scope tip matrix
+    current_scope_tip_matrix = getScopeTip(current_end_effector_matrix, angulation_angle);
+
+    //Set Xa as the current scope tip matrix
+    Xa = current_scope_tip_matrix.block<3, 1>(0, 3);
+
+    //Set Xb as the target position and Xc as the incision matrix
+    Xb = target_scope_tip_matrix.block<3, 1>(0, 3);
+
+    //Calculate target matrix
+    Eigen::Matrix4d target_matrix;
+    target_matrix.setIdentity();
+    target_matrix.block<3,1>(0,0) = (target_scope_tip_matrix.block<3, 1>(0, 2).cross((Xb - Xc).normalized())).normalized();
+    target_matrix.block<3,1>(0,2) = target_scope_tip_matrix.block<3, 1>(0, 2).normalized();
+    target_matrix.block<3,1>(0,1) = (target_matrix.block<3,1>(0,2).cross(target_matrix.block<3,1>(0,0))).normalized();
+    target_matrix.block<3,1>(0,3) = target_scope_tip_matrix.block<3, 1>(0, 3);
+
     //Get the damp position
-    //damp_position = Utilities::SmoothDampVector(current_pos, target_pos, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
-    //damp_position = Utilities::RuckigCalculation(current_pos, target_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
-    //damp_position = Utilities::OTGCalculation(current_pos, target_pos, last_target_pos, profile_pos, idx_pos, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, publish_period);
-    damp_position = Utilities::OTGCalculationS(current_pos, target_pos, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, alpha, publish_period);
-    joint_stream << target_pos(0) << ","<< target_pos(1) << ","<< target_pos(2) << ","<< damp_position(0) << ","<< damp_position(1) << ","<< damp_position(2) <<","<< current_pos(0) << ","<< current_pos(1) << ","<< current_pos(2) << ",";
-    joint_stream.seekp(-1, std::ios_base::end);
-    joint_stream << "\n";
+    //damp_position = Utilities::SmoothDampVector(Xa, Xb, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
+    //damp_position = Utilities::RuckigCalculation(Xa, Xb, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
+    damp_position = Utilities::OTGCalculationS(Xa, Xb, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, alpha, publish_period);
 
-    Eigen::Vector3d end_effector_linear_velocity = current_linear_velocity;
     //Calculate orientation
-    current_ee_pose = Utilities::matrix_to_pose(current_end_effector_matrix);
-    tf2::Quaternion current_ee_quat(current_ee_pose.orientation.x, current_ee_pose.orientation.y, current_ee_pose.orientation.z, current_ee_pose.orientation.w);
-    tf2::Matrix3x3(current_ee_quat).getRPY(current_x, current_y, current_z);
+    geometry_msgs::Pose current_scope_tip_pose = Utilities::matrix_to_pose(current_scope_tip_matrix);
+    tf2::Quaternion current_scope_tip_quat(current_scope_tip_pose.orientation.x, current_scope_tip_pose.orientation.y, current_scope_tip_pose.orientation.z, current_scope_tip_pose.orientation.w);
+    double current_x, current_y, current_z;
+    tf2::Matrix3x3(current_scope_tip_quat).getRPY(current_x, current_y, current_z);
 
-    geometry_msgs::Pose target_pose = Utilities::matrix_to_pose(target_matrix);
-    tf2::Quaternion target_quat(target_pose.orientation.x, target_pose.orientation.y, target_pose.orientation.z, target_pose.orientation.w);
+    geometry_msgs::Pose target_scope_tip_pose = Utilities::matrix_to_pose(target_matrix);
+    tf2::Quaternion target_scope_tip_quat(target_scope_tip_pose.orientation.x, target_scope_tip_pose.orientation.y, target_scope_tip_pose.orientation.z, target_scope_tip_pose.orientation.w);
     double target_x, target_y, target_z;
-    tf2::Matrix3x3(target_quat).getRPY(target_x, target_y, target_z);
-
-    Utilities::correct_joint_range(current_x,current_y,current_z, target_x,target_y,target_z);
-    //printf("current: %f %f %f, target: %f %f %f\n", current_x, current_y, current_z, target_x, target_y,target_z);
+    tf2::Matrix3x3(target_scope_tip_quat).getRPY(target_x, target_y, target_z);
 
     //Calculate Angular velocities and positions
     Eigen::Vector3d current_euler(current_x, current_y, current_z);
@@ -316,12 +365,15 @@ void RobotController::_path_computation_thread_func(){
     //damp_euler = Utilities::SmoothDampVector(current_euler, target_euler, current_angular_velocity, smoothTime, max_angular_velocity, publish_period);
     //damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
     damp_euler = Utilities::OTGCalculationS(current_euler, target_euler, last_target_euler, trajOTG_euler_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration,max_angular_jerk,alpha, publish_period);
+
     double x_cur = damp_euler.x();
     double y_cur = damp_euler.y();
     double z_cur = damp_euler.z();
     eulerXVelocity = current_angular_velocity.x();
     eulerYVelocity = current_angular_velocity.y();
     eulerZVelocity = current_angular_velocity.z();
+
+    //Create target scope tip pose
     tf2::Quaternion quat_damp;
     quat_damp.setEulerZYX(z_cur, y_cur, x_cur);
     geometry_msgs::Pose damp_pose;
@@ -333,38 +385,88 @@ void RobotController::_path_computation_thread_func(){
     damp_pose.position.y = damp_position.y();
     damp_pose.position.z = damp_position.z();
     Eigen::Matrix4d damp_frame = Utilities::pose_to_matrix(damp_pose);
-//https://math.stackexchange.com/questions/668866/how-do-you-find-angular-velocity-given-a-pair-of-3x3-rotation-matrices
-    Eigen::Matrix3d cur_rot = current_end_effector_matrix.block<3,3>(0,0);
-    Eigen::Matrix3d target_rot = damp_frame.block<3,3>(0,0);
-    Eigen::Matrix3d a = target_rot * cur_rot.transpose();
-    double theta = acos((a.trace()-1)/2);
-    Eigen::Matrix3d skew = 1/(2*publish_period) * theta/sin(theta) * (a-a.transpose());
+
+    //Calculate Linear Velocity
+    Eigen::Vector3d Xp = damp_position;
+    Eigen::Vector3d f = Xp - Xc;
+    Eigen::Vector3d f_der = current_linear_velocity;
+    Eigen::Vector3d end_effector_linear_velocity = current_linear_velocity - 0.37 *
+                        (f.norm()*f.norm()*f_der - (f.dot(f_der))*f)/(f.norm()*f.norm()*f.norm());
+
+    double Zx_cylinder = cos(z_cur)*sin(y_cur)*cos(x_cur) + sin(z_cur)*sin(x_cur);
+    double der_Zx_cylinder = -cos(z_cur)*sin(y_cur)*sin(x_cur)*eulerXVelocity
+                             +cos(z_cur)*cos(x_cur)*cos(y_cur)*eulerYVelocity
+                             -sin(y_cur)*cos(x_cur)*sin(z_cur)*eulerZVelocity
+                             +sin(z_cur)*cos(x_cur)*eulerXVelocity + sin(x_cur)*cos(z_cur)*eulerZVelocity;
+
+    double Zy_cylinder = sin(z_cur)*sin(y_cur)*cos(x_cur) - cos(z_cur)*sin(x_cur);
+    double der_Zy_cylinder = -sin(z_cur)*sin(y_cur)*sin(x_cur)*eulerXVelocity
+                             +sin(z_cur)*cos(x_cur)*cos(y_cur)*eulerYVelocity
+                             +sin(y_cur)*cos(x_cur)*cos(z_cur)*eulerZVelocity
+                             -cos(z_cur)*cos(x_cur)*eulerXVelocity + sin(x_cur)*sin(z_cur)*eulerZVelocity;
+
+    double Zz_cylinder = cos(y_cur)*cos(x_cur);
+    double der_Zz_cylinder = -cos(y_cur)*sin(x_cur)*eulerXVelocity - cos(x_cur)*sin(y_cur)*eulerYVelocity;
+
+    Eigen::Vector3d Zcylinder = Eigen::Vector3d(Zx_cylinder, Zy_cylinder, Zz_cylinder);
+    Eigen::Vector3d der_Zcylinder = Eigen::Vector3d(der_Zx_cylinder, der_Zy_cylinder, der_Zz_cylinder);
+
+    Eigen::Vector3d Zend_effector = (damp_frame.block<3, 1>(0, 3) - Xc).normalized();
+    Eigen::Vector3d Xend_effector = (Zcylinder.cross(Zend_effector).normalized()).normalized();
+    Eigen::Vector3d Yend_effector = (Zend_effector.cross(Xend_effector)).normalized();
+    Eigen::Matrix4d end_effector_frame;
+    end_effector_frame.setIdentity();
+    end_effector_frame.block<3,1>(0,0) = Xend_effector;
+    end_effector_frame.block<3,1>(0,1) = Yend_effector;
+    end_effector_frame.block<3,1>(0,2) = Zend_effector;
+    end_effector_frame.block<3,1>(0,3) = damp_position - 0.37 * (damp_position - Xc).normalized();
+
+    //Derivative of Z axis
+    Eigen::Vector3d zAxis_der = (f.norm()*f.norm()*f_der - (f.dot(f_der))*f)/(f.norm()*f.norm()*f.norm());
+
+    //Derivative of X axis
+    Eigen::Vector3d g = Zcylinder.cross(Zend_effector);
+    Eigen::Vector3d g_der = Zcylinder.cross(zAxis_der) + der_Zcylinder.cross(Zend_effector);
+    Eigen::Vector3d xAxis_der = (g.norm()*g.norm()*g_der - (g.dot(g_der))*g)/(g.norm()*g.norm()*g.norm());
+
+    //Derivative of Y Axis
+    Eigen::Vector3d yAxis_der = Zend_effector.cross(xAxis_der) + zAxis_der.cross(Xend_effector);
+
+    Eigen::Matrix3d rot_matrix;
+    rot_matrix.setIdentity();
+    rot_matrix.block<3, 1>(0, 0) = Xend_effector;
+    rot_matrix.block<3, 1>(0, 1) = Yend_effector;
+    rot_matrix.block<3, 1>(0, 2) = Zend_effector;
+
+    Eigen::Matrix3d der_matrix;
+    der_matrix.setIdentity();
+    der_matrix.block<3, 1>(0, 0) = xAxis_der;
+    der_matrix.block<3, 1>(0, 1) = yAxis_der;
+    der_matrix.block<3, 1>(0, 2) = zAxis_der;
+
+    Eigen::Matrix3d skew = der_matrix * rot_matrix.transpose();
+
     double angular_x = skew(2, 1);
     double angular_y = skew(0, 2);
     double angular_z = skew(1, 0);
     Eigen::Vector3d end_effector_angular_velocity(angular_x, angular_y, angular_z);
 
-    //printf("angular vel :%f %f %f\n", end_effector_angular_velocity(0),end_effector_angular_velocity(1),end_effector_angular_velocity(2));
+    //Velocity that needs to be added to counter rcm drift
+    Xe = current_end_effector_matrix.block<3, 1>(0, 3);
+    Eigen::Vector3d Xc_ = Xe +
+                        ((Xc - Xe).dot(current_end_effector_matrix.block<3, 1>(0, 2)))*current_end_effector_matrix.block<3, 1>(0, 2);
+    Eigen::Vector3d correction_velocity = ((Xc - Xc_) / publish_period) * max_linear_velocity;
 
+    //Send velocity commands to moveit servo
+    end_effector_linear_velocity = end_effector_linear_velocity + correction_velocity;
     twist.header.stamp = ros::Time::now();
     twist.twist.linear.x = end_effector_linear_velocity.x();
     twist.twist.linear.y = end_effector_linear_velocity.y();
     twist.twist.linear.z = end_effector_linear_velocity.z();
-    twist.twist.angular.x = isnan(end_effector_angular_velocity.x())? 0 : end_effector_angular_velocity.x();
-    twist.twist.angular.y = isnan(end_effector_angular_velocity.y())? 0 : end_effector_angular_velocity.y();
-    twist.twist.angular.z = isnan(end_effector_angular_velocity.z())? 0 : end_effector_angular_velocity.z();
-    //printf("linear vel: %f %f %f\n", twist.twist.linear.x,twist.twist.linear.y,twist.twist.linear.z);
-    //printf("angular vel: %f %f %f\n", twist.twist.angular.x,twist.twist.angular.y,twist.twist.angular.z);
+    twist.twist.angular.x = end_effector_angular_velocity.x();
+    twist.twist.angular.y = end_effector_angular_velocity.y();
+    twist.twist.angular.z = end_effector_angular_velocity.z();
     _twist_stamped_pub.publish(twist);
-/*
-    auto stop = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
-    if(duration.count()>15000)
-    {
-      cout << "Time taken by function: "
-               << duration.count() << " microseconds" << endl;
-     }
-     */
     cmd_rate.sleep();
   }
 }
@@ -536,8 +638,8 @@ void RobotController::_update_cylinder() {
     _rviz_marker._update_target_position(target_pose);
 
 
-    printf("gazebo:%f %f %f\n", target_pose.position.x,target_pose.position.y,target_pose.position.z);
-    printf("rviz:%f %f %f\n", _rviz_marker._target_pose.position.x,_rviz_marker._target_pose.position.y,_rviz_marker._target_pose.position.z);
+    //printf("gazebo:%f %f %f\n", target_pose.position.x,target_pose.position.y,target_pose.position.z);
+    //printf("rviz:%f %f %f\n", _rviz_marker._target_pose.position.x,_rviz_marker._target_pose.position.y,_rviz_marker._target_pose.position.z);
     path_thread.lock();
     _target_matrix = Utilities::pose_to_matrix(target_pose);
     path_thread.unlock();

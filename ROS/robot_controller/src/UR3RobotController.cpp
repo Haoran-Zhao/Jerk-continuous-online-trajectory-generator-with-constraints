@@ -16,7 +16,9 @@
 	DESCRIPTION	: Constructor
 */
 UR3RobotController::UR3RobotController() {
-    _compute_path = new UR3PathComputation();
+  _cylinder_angle = 0.523599; // 30 degree in radian  0.523599
+  _scope_length = 0.37;
+  _compute_path = new UR3PathComputation();
 }
 
 /*

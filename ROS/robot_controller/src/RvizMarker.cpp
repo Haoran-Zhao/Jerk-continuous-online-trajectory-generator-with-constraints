@@ -37,7 +37,9 @@ void RvizMarker::initialize(ros::NodeHandle *node_ptr, moveit::planning_interfac
     _move_group_ptr = move_group_ptr;
     _node_ptr = node_ptr;
     _sphere_id = 0;
+    _rcm_id = 3;
     _cylinder_id = 1;
+    _linelist_id = 4;
     _vis_pub = _node_ptr->advertise<visualization_msgs::Marker>( "/visualization_marker", 0 );
     _vis_pub1 = _node_ptr->advertise<visualization_msgs::MarkerArray>( "/visualization_marker_array", 0 );
     //_vis_sub1 = _node_ptr->->subscribe( "/visualization_marker_array", 1,  &RvizMarker::Callback, this);
@@ -168,10 +170,59 @@ void RvizMarker::_publish_end_effector_position(){
         marker2.color.g = 0;
         marker2.color.b = 0;
 
+        //Creates the marker
+        visualization_msgs::Marker marker3;
+        marker3.header.frame_id = "world";
+        marker3.id = _rcm_id;
+        marker3.type = visualization_msgs::Marker::SPHERE;
+        marker3.action =  visualization_msgs::Marker::ADD;
+        marker3.pose = _rcm_pose;
+
+        //Set the scale of the marker
+        marker3.scale.x = 0.015;
+        marker3.scale.y = 0.015;
+        marker3.scale.z = 0.015;
+        marker3.color.a = 1;
+
+        //Set the color of the marker
+        marker3.color.r = 0;
+        marker3.color.g = 0;
+        marker3.color.b = 1;
+
+        //Creates the marker line
+        visualization_msgs::Marker marker4;
+        marker4.header.frame_id = "world";
+        marker4.id = _linelist_id;
+        marker4.type = visualization_msgs::Marker::LINE_LIST;
+        marker4.action =  visualization_msgs::Marker::ADD;
+        marker4.pose.orientation.w =1.0;
+
+        //Set the scale of the marker
+        marker4.scale.x = 0.001;
+
+        //Set the color of the marker
+        marker4.color.a = 1.0;
+        marker4.color.r = 1.0;
+        marker4.color.g = 1.0;
+        marker4.color.b = 0.0;
+
+        geometry_msgs::Point p1, p2;
+        p1.x = robot_pose.position.x;
+        p1.y = robot_pose.position.y;
+        p1.z = robot_pose.position.z;
+
+        p2.x = _target_pose.position.x;
+        p2.y = _target_pose.position.y;
+        p2.z = _target_pose.position.z;
+
+        marker4.points.push_back(p1);
+        marker4.points.push_back(p2);
         visualization_msgs::MarkerArray rviz_markers;
 
         rviz_markers.markers.push_back(marker1);
         rviz_markers.markers.push_back(marker2);
+        rviz_markers.markers.push_back(marker3);
+        rviz_markers.markers.push_back(marker4);
         _vis_pub1.publish( rviz_markers );
         //Sleep for 30 millisecond
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

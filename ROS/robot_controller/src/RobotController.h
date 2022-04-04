@@ -112,7 +112,9 @@ protected:
     std::stringstream joint_stream;
 
     std::mutex path_thread;
-
+    Eigen::Matrix4d incision_matrix;
+    double _cylinder_angle;
+    double _scope_length;
     /**
     * Pointer to NodeHandle Object
     */
