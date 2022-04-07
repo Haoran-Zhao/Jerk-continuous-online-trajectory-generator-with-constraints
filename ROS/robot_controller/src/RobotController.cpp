@@ -466,6 +466,13 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.angular.x = end_effector_angular_velocity.x();
     twist.twist.angular.y = end_effector_angular_velocity.y();
     twist.twist.angular.z = end_effector_angular_velocity.z();
+    
+    printf("target x: %f y: %f z: %f\n", Xb(0), Xb(1), Xb(2));
+    printf("current x: %f y: %f z: %f\n", Xa(0), Xa(1), Xa(2));
+
+    printf("linear x: %f y: %f z: %f\n", twist.twist.linear.x, twist.twist.linear.y, twist.twist.linear.z);
+    printf("angular x: %f y: %f z: %f\n", twist.twist.angular.x, twist.twist.angular.y, twist.twist.angular.z);
+
     _twist_stamped_pub.publish(twist);
     cmd_rate.sleep();
   }
