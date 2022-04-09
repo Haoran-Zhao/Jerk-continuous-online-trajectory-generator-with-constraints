@@ -237,7 +237,7 @@ vector<vector<double>> TrigonometricOTG::computeTypeI(double a0, double v0, doub
 
     if (abs(denum) < eps)
     {
-        ans.push_back({0,0});
+        ans.push_back({0,0,0,0,0,0,0,0,0,0,0});
     }
     else
     {
@@ -528,7 +528,8 @@ vector<vector<double>> TrigonometricOTG::computeTypeI(double a0, double v0, doub
                 4 * pow(c2, 4) * c3 * d1 * d6 * pow(d7, 3) * pow(ta1ANS, 5) - 3 * c1 * pow(c2, 3) * c3 * d2 * d6 * pow(d7, 3) * pow(ta1ANS, 5) +
                 2 * pow(c1, 2) * pow(c2, 2) * c3 * d3 * d6 * pow(d7, 3) * pow(ta1ANS, 5) - 3 * c0 * pow(c2, 3) * c3 * d3 * d6 * pow(d7, 3) * pow(ta1ANS, 5) -
                 pow(c2, 5) * d1 * pow(d7, 4) * pow(ta1ANS, 5) + c1 * pow(c2, 4) * d2 * pow(d7, 4) * pow(ta1ANS, 5) -
-                pow(c1, 2) * pow(c2, 3) * d3 * pow(d7, 4) * pow(ta1ANS, 5) + c0 * pow(c2, 4) * d3 * pow(d7, 4) * pow(ta1ANS, 5)) /
+                pow(c1, 2) * pow(c2, 3) * d3 * pow(d7, 4) * pow(ta1ANS, 5) + c0 * pow(c2, 4) * d3 * pow(d7, 4) * pow(ta1ANS, 5)) /denum;
+                /*
                 (pow(c3, 5) * pow(d3, 2) * pow(d4, 3) - pow(c3, 5) * d2 * d3 * pow(d4, 2) * d5 + pow(c3, 5) * d1 * d3 * d4 * pow(d5, 2) - pow(c3, 5) * d0 * d3 * pow(d5, 3) +
                 pow(c3, 5) * pow(d2, 2) * pow(d4, 2) * d6 - 2 * pow(c3, 5) * d1 * d3 * pow(d4, 2) * d6 - pow(c3, 5) * d1 * d2 * d4 * d5 * d6 + 3 * pow(c3, 5) * d0 * d3 * d4 * d5 * d6 +
                 pow(c3, 5) * d0 * d2 * pow(d5, 2) * d6 + pow(c3, 5) * pow(d1, 2) * d4 * pow(d6, 2) - 2 * pow(c3, 5) * d0 * d2 * d4 * pow(d6, 2) - pow(c3, 5) * d0 * d1 * d5 * pow(d6, 2) +
@@ -553,6 +554,7 @@ vector<vector<double>> TrigonometricOTG::computeTypeI(double a0, double v0, doub
                 2 * c0 * pow(c2, 2) * pow(c3, 2) * d0 * d2 * pow(d7, 3) + c0 * c1 * c2 * pow(c3, 2) * d1 * d2 * pow(d7, 3) - pow(c0, 2) * c2 * pow(c3, 2) * pow(d2, 2) * pow(d7, 3) +
                 pow(c1, 3) * pow(c3, 2) * d0 * d3 * pow(d7, 3) - 3 * c0 * c1 * c2 * pow(c3, 2) * d0 * d3 * pow(d7, 3) - c0 * pow(c1, 2) * pow(c3, 2) * d1 * d3 * pow(d7, 3) +
                 2 * pow(c0, 2) * c2 * pow(c3, 2) * d1 * d3 * pow(d7, 3) + pow(c0, 2) * c1 * pow(c3, 2) * d2 * d3 * pow(d7, 3) - pow(c0, 3) * pow(c3, 2) * pow(d3, 2) * pow(d7, 3));
+                */
                 tb1 = ta1 + (a0 * pi * alpha) / (Jpeak * pi * sa + 4 * Jpeak * sa * alpha - Jpeak * pi * sa * alpha);
                 ta2 = (1 - alpha) * ta1 / alpha;
                 tb2 = (1 - alpha) * tb1 / alpha;

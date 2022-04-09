@@ -284,8 +284,8 @@ Eigen::Matrix4d getScopeTip(Eigen::Matrix4d end_effector_matrix, double angulati
 void RobotController::_path_computation_thread_func(){
   double angulation_angle = 0.523599;
   double smoothTime = 1;
-  double max_linear_velocity = 0.03, max_linear_acceleration = 0.05, max_linear_jerk = 10;
-  double max_angular_velocity = 0.5, max_angular_acceleration = 5, max_angular_jerk = 100;
+  double max_linear_velocity = 1, max_linear_acceleration = 0.05, max_linear_jerk = 10;
+  double max_angular_velocity = 1, max_angular_acceleration = 0.05, max_angular_jerk = 10;
   double alpha=0.00001;
   double eulerXVelocity = 0.0, eulerYVelocity = 0.0, eulerZVelocity = 0.0;
   double publish_period = 0.03;
@@ -346,7 +346,8 @@ void RobotController::_path_computation_thread_func(){
     //Get the damp position
     //damp_position = Utilities::SmoothDampVector(Xa, Xb, current_linear_velocity, smoothTime, max_linear_velocity, publish_period);
     //damp_position = Utilities::RuckigCalculation(Xa, Xb, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, publish_period);
-    damp_position = Utilities::OTGCalculationS(Xa, Xb, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, alpha, publish_period);
+    //damp_position = Utilities::OTGCalculationS(Xa, Xb, last_target_pos, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration, max_linear_jerk, alpha, publish_period);
+    damp_position = Utilities::OTGCalculationOL(Xa, Xb, trajOTG_pos_ptr, current_linear_velocity, current_linear_acceleration, max_linear_velocity, max_linear_acceleration,max_linear_jerk, alpha, publish_period);
 
     //Calculate orientation
     geometry_msgs::Pose current_scope_tip_pose = Utilities::matrix_to_pose(current_scope_tip_matrix);
@@ -364,7 +365,8 @@ void RobotController::_path_computation_thread_func(){
     Eigen::Vector3d target_euler(target_x, target_y, target_z);
     //damp_euler = Utilities::SmoothDampVector(current_euler, target_euler, current_angular_velocity, smoothTime, max_angular_velocity, publish_period);
     //damp_euler = Utilities::RuckigCalculation(current_euler, target_euler, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration, max_angular_jerk, publish_period);
-    damp_euler = Utilities::OTGCalculationS(current_euler, target_euler, last_target_euler, trajOTG_euler_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration,max_angular_jerk,alpha, publish_period);
+    //damp_euler = Utilities::OTGCalculationS(current_euler, target_euler, last_target_euler, trajOTG_euler_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration,max_angular_jerk,alpha, publish_period);
+    damp_euler = Utilities::OTGCalculationOL(current_euler, target_euler, trajOTG_euler_ptr, current_angular_velocity, current_angular_acceleration, max_angular_velocity, max_angular_acceleration,max_angular_jerk,alpha, publish_period);
 
     double x_cur = damp_euler.x();
     double y_cur = damp_euler.y();
@@ -466,12 +468,12 @@ void RobotController::_path_computation_thread_func(){
     twist.twist.angular.x = end_effector_angular_velocity.x();
     twist.twist.angular.y = end_effector_angular_velocity.y();
     twist.twist.angular.z = end_effector_angular_velocity.z();
-    
-    printf("target x: %f y: %f z: %f\n", Xb(0), Xb(1), Xb(2));
-    printf("current x: %f y: %f z: %f\n", Xa(0), Xa(1), Xa(2));
 
-    printf("linear x: %f y: %f z: %f\n", twist.twist.linear.x, twist.twist.linear.y, twist.twist.linear.z);
-    printf("angular x: %f y: %f z: %f\n", twist.twist.angular.x, twist.twist.angular.y, twist.twist.angular.z);
+    //printf("target x: %f y: %f z: %f\n", Xb(0), Xb(1), Xb(2));
+    //printf("current x: %f y: %f z: %f\n", Xa(0), Xa(1), Xa(2));
+
+    //printf("linear x: %f y: %f z: %f\n", twist.twist.linear.x, twist.twist.linear.y, twist.twist.linear.z);
+    //printf("angular x: %f y: %f z: %f\n", twist.twist.angular.x, twist.twist.angular.y, twist.twist.angular.z);
 
     _twist_stamped_pub.publish(twist);
     cmd_rate.sleep();
